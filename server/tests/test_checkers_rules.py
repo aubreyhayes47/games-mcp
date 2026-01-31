@@ -25,6 +25,13 @@ def test_apply_checkers_move_changes_turn():
     assert result.turn == "b"
 
 
+def test_apply_checkers_move_accepts_separators():
+    state = initial_checkers_state()
+    result = apply_checkers_move(state, "a3-b4")
+    assert result.legal is True
+    assert result.last_move == "a3b4"
+
+
 def test_forced_capture_blocks_simple_move():
     state = "......../......../......../......../...b..../..w...../......../........ w"
     legal = legal_checkers_moves(state)
@@ -33,3 +40,10 @@ def test_forced_capture_blocks_simple_move():
     assert "c3e5" in capture_moves
     assert "c3b4" not in legal
     assert "c3e5" in legal
+
+
+def test_apply_checkers_move_accepts_capture_separator():
+    state = "......../......../......../......../...b..../..w...../......../........ w"
+    result = apply_checkers_move(state, "c3xe5")
+    assert result.legal is True
+    assert result.last_move == "c3e5"

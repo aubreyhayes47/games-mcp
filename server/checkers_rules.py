@@ -100,12 +100,22 @@ def opponent(color: str) -> str:
 
 
 def move_squares_from_string(move: str) -> list[str]:
-    if not move or len(move) % 2 != 0:
+    normalized = normalize_move_notation(move)
+    if not normalized or len(normalized) % 2 != 0:
         raise ValueError("Invalid move notation.")
-    squares = [move[i : i + 2] for i in range(0, len(move), 2)]
+    squares = [normalized[i : i + 2] for i in range(0, len(normalized), 2)]
     if len(squares) < 2:
         raise ValueError("Move must include at least two squares.")
     return squares
+
+
+def normalize_move_notation(move: str) -> str:
+    if not isinstance(move, str):
+        return ""
+    cleaned = move.strip().lower()
+    for separator in ("-", "x", " ", "\t", "\n", "\r"):
+        cleaned = cleaned.replace(separator, "")
+    return cleaned
 
 
 def legal_checkers_moves(state: str) -> list[str]:
@@ -203,11 +213,12 @@ def apply_checkers_move(state: str, move: str) -> CheckersMoveResult:
     except ValueError as exc:
         return CheckersMoveResult(False, state, error=str(exc))
 
+    normalized_move = normalize_move_notation(move)
     legal_moves = legal_checkers_moves(state)
-    if move not in legal_moves:
+    if normalized_move not in legal_moves:
         return CheckersMoveResult(False, state, error="Illegal move.")
 
-    squares = move_squares_from_string(move)
+    squares = move_squares_from_string(normalized_move)
     start_row, start_col = square_to_coords(squares[0])
     piece = board[start_row][start_col]
     board[start_row][start_col] = "."
@@ -239,7 +250,7 @@ def apply_checkers_move(state: str, move: str) -> CheckersMoveResult:
         new_state,
         status=status,
         turn=next_turn,
-        last_move=move,
+        last_move=normalized_move,
         winner=winner,
     )
 
