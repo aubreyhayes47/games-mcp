@@ -9,7 +9,7 @@ as new games are added.
 Implemented today:
 
 * Chess (LLM opponent constrained to legal moves)
-* Checkers (chess-like notation)
+* Checkers (algebraic square notation)
 
 Planned next:
 
@@ -379,4 +379,5 @@ Manual test checklist:
 * Start a checkers game via chat (model calls `new_checkers_game`).
 * Type a legal move and confirm `render_checkers_game` updates the board.
 * Type an illegal move and confirm the error with no board change.
+* Confirm the opponent loop runs after a legal checkers move.
 * Confirm forced captures are enforced.

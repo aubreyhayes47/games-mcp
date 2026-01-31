@@ -1,4 +1,4 @@
-# games-mcp server (scaffold)
+# games-mcp server
 
 This directory contains the FastMCP server and game MCP tools.
 
@@ -90,6 +90,47 @@ uses `render_chess_game` or `render_checkers_game` as the only widget-rendering 
 }
 ```
 
+```json
+// new_checkers_game
+{}
+```
+
+```json
+// render_checkers_game
+{
+  "snapshot": {
+    "type": "checkers_snapshot",
+    "gameId": "g_example",
+    "state": ".b.b.b.b/b.b.b.b./.b.b.b.b/......../......../w.w.w.w./.w.w.w.w/w.w.w.w. w",
+    "status": "in_progress",
+    "turn": "w"
+  }
+}
+```
+
+```json
+// legal_checkers_moves
+{
+  "state": ".b.b.b.b/b.b.b.b./.b.b.b.b/......../......../w.w.w.w./.w.w.w.w/w.w.w.w. w"
+}
+```
+
+```json
+// apply_checkers_move
+{
+  "gameId": "g_example",
+  "state": ".b.b.b.b/b.b.b.b./.b.b.b.b/......../......../w.w.w.w./.w.w.w.w/w.w.w.w. w",
+  "move": "b6a5"
+}
+```
+
+```json
+// choose_checkers_opponent_move
+{
+  "state": ".b.b.b.b/b.b.b.b./.b.b.b.b/......../......../w.w.w.w./.w.w.w.w/w.w.w.w. w"
+}
+```
+
 ## Running tests
 
 ```bash
@@ -128,14 +169,23 @@ orchestrator should call `choose_chess_opponent_move` again to request a valid m
 - Call `apply_chess_move` with an illegal move (e.g., `e2e5` from the starting position).
 - Call `choose_chess_opponent_move` with the current `fen` and confirm it returns moves + policy.
 - Call `render_chess_game` with the latest snapshot to render the widget output.
+- Call `new_checkers_game` and keep the returned `state`.
+- Call `legal_checkers_moves` to confirm the legal/forced capture list.
+- Call `apply_checkers_move` with a legal move (e.g., `b6a5` from the starting position).
+- Call `apply_checkers_move` with an illegal move to confirm `legal: false`.
+- Call `choose_checkers_opponent_move` with the current `state` and confirm it returns moves + policy.
+- Call `render_checkers_game` with the latest snapshot to render the widget output.
 
 ## Notes
 
 - Tool handlers live in `tools.py`.
-- Chess rules and legality checks will live in `chess_rules.py`.
-- The widget HTML template is in `templates/chess-board-v1.html`.
-- The widget resource is registered in `app.py` with the URI
-  `ui://widget/chess-board-v1.html` and served with
+- Chess rules and legality checks live in `chess_rules.py`.
+- Checkers rules and legality checks live in `checkers_rules.py`.
+- The widget HTML templates are in `templates/chess-board-v1.html` and
+  `templates/checkers-board-v1.html`.
+- Widget resources are registered in `app.py` with the URIs
+  `ui://widget/chess-board-v1.html` and
+  `ui://widget/checkers-board-v1.html`, served with
   `mimeType: text/html+skybridge`.
 - To cache-bust future template changes, version the URI and template name
   (for example `ui://widget/chess-board-v2.html` plus a new
