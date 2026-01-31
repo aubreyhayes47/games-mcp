@@ -143,6 +143,10 @@ export default function App() {
                         } ${isKing ? "piece--king" : ""}`}
                       />
                     ) : null}
+                    <span className="coord">
+                      {fileIndex === 0 ? rank : ""}
+                      {rankIndex === 7 ? file : ""}
+                    </span>
                   </div>
                 );
               })
