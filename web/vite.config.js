@@ -1,7 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
-const widget = process.env.WIDGET;
+const widget = process.env.WIDGET || "chess";
 
 const buildConfig = (root) =>
   defineConfig({
@@ -26,8 +26,4 @@ const buildConfig = (root) =>
     }
   });
 
-const WIDGET_ROOTS = ["widgets/chess", "widgets/checkers"];
-
-export default widget
-  ? buildConfig(`widgets/${widget}`)
-  : WIDGET_ROOTS.map((root) => buildConfig(root));
+export default buildConfig(`widgets/${widget}`);

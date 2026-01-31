@@ -7,8 +7,8 @@
     "dev": "vite",
     "dev:chess": "vite",
     "dev:checkers": "WIDGET=checkers vite",
-    "build": "vite build",
-    "build:chess": "vite build",
+    "build": "npm run build:chess && npm run build:checkers",
+    "build:chess": "WIDGET=chess vite build",
     "build:checkers": "WIDGET=checkers vite build",
     "preview": "vite preview"
   },
