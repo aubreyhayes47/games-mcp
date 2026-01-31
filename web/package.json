@@ -1,0 +1,23 @@
+{
+  "name": "chess-mcp-widget",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "dev:chess": "vite",
+    "dev:checkers": "WIDGET=checkers vite",
+    "build": "vite build",
+    "build:chess": "vite build",
+    "build:checkers": "WIDGET=checkers vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
+    "vite": "^5.4.0"
+  }
+}
