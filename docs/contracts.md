@@ -1,64 +1,8 @@
-# AGENTS.md
+# Tool Contracts
 
-This file is the **single source of truth** for how coding agents should work on this repo.
+This document defines the tool inputs/outputs and state formats for all current games.
 
-Repo: **games-mcp**
-Stack preference: **Python (FastMCP)** for the MCP server, React widget for UI.
-
-## 0) One-paragraph goal
-
-Build a minimal ChatGPT Apps SDK **games library** that exposes authoritative game tools and a
-display-only widget UI. Chess, checkers, and blackjack are implemented today; planned additions
-include heads-up NL Hold'em (LLM opponent), a slot machine, Four-in-a-Row, Tic-Tac-Toe, Sea
-Battle, Roulette (American), and RPG dice (d4, d6, d8, d10, d12, d20, d100).
-
-## 1) Definition of Done (current implementations: chess + checkers + blackjack)
-
-A change is “done” when all of the following are true:
-
-1. **Widget renders a board/table** from `window.openai.toolOutput` inside the ChatGPT iframe.
-2. User **types moves in chat** (no board interaction).
-3. The model calls `apply_chess_move`, `apply_checkers_move`, or `apply_blackjack_action` based on chat input.
-4. The model receives widget output directly from `new_*` and `apply_*` tool responses (auto-render).
-   * If `legal: false`, the model reports the error and does not change the board.
-5. After a legal player move, the model runs the **opponent/dealer turn loop**:
-   * Chess/Checkers: call `choose_chess_opponent_move(fen)` or `choose_checkers_opponent_move(state)`
-     and select exactly one move from the list, apply it via the matching apply tool,
-     then the updated snapshot auto-renders from the apply tool response.
-   * Blackjack: call `choose_blackjack_dealer_action(state)` and select exactly one
-     action from the list, apply it via `apply_blackjack_action`, then auto-render
-     from the tool response.
-6. Game over states are rendered correctly.
-7. Works locally and in production behind HTTPS (e.g., Render).
-
-## 2) Non-negotiable invariants
-
-These are hard rules. If your implementation violates them, it is wrong.
-
-### 2.1 Canonical truth
-
-* **Canonical state is the server-confirmed game snapshot** returned by tools.
-* The widget must never “optimistically commit” a move.
-
-### 2.2 LLM opponent constraints
-
-* The LLM opponent/dealer **must choose from** a tool-provided list of legal moves/actions.
-* The server must **re-validate** the chosen move/action via the game-specific apply tool before committing.
-
-### 2.3 No game logic in prose
-
-* No game state transitions are inferred from chat text.
-* Every state transition is derived from a tool response.
-
-### 2.4 Payload discipline
-
-* `structuredContent` is **small** and stable.
-* Put bulky or UI-only information in `_meta` (or omit for v1).
-
-## 3) Current tool contracts (chess + checkers + blackjack)
-
-The chess tool contracts are the reference for future games. Checkers follows the same
-constraints and payload discipline with a different state format.
+## Chess
 
 ### Tool: `new_chess_game`
 
@@ -147,7 +91,7 @@ If illegal:
 }
 ```
 
-## Checkers tool contracts
+## Checkers
 
 ### Checkers state format
 
@@ -195,6 +139,19 @@ Rows use `w`/`W` for white man/king, `b`/`B` for black man/king, and `.` for emp
 }
 ```
 
+If illegal:
+
+```json
+{
+  "type": "checkers_snapshot",
+  "gameType": "checkers",
+  "gameId": "g_123",
+  "legal": false,
+  "state": "<UNCHANGED_STATE>",
+  "error": "Illegal move."
+}
+```
+
 ### Tool: `legal_checkers_moves` (read-only)
 
 **Input**
@@ -233,7 +190,7 @@ Rows use `w`/`W` for white man/king, `b`/`B` for black man/king, and `.` for emp
 }
 ```
 
-## Blackjack tool contracts
+## Blackjack
 
 ### Blackjack state format
 
@@ -246,6 +203,9 @@ Hands are encoded as `cards@state@doubled@bet`, for example:
 ```
 P:AS,8D@active@0@10;7C,7H@active@0@10
 ```
+
+`R` is optional and contains per-hand results when the game is over (`win`, `lose`,
+`push`, `bust`, `blackjack`).
 
 ### Tool: `new_blackjack_game`
 
@@ -341,47 +301,4 @@ If illegal:
     "chooseExactlyOne": true
   }
 }
-```
-
-## 4) Repo layout (current)
-
-```
-games-mcp/
-  server/
-    app.py                 # MCP server (FastMCP/FastAPI)
-    chess_rules.py         # move parsing + legality + FEN transitions
-    checkers_rules.py      # move parsing + legality + state transitions
-    blackjack_rules.py     # action parsing + legality + state transitions
-    storage.py             # optional: gameId -> state/history persistence
-    templates/
-      chess-board-v1.html  # text/html+skybridge wrapper
-      checkers-board-v1.html
-      blackjack-board-v1.html
-  web/
-    widgets/
-      chess/
-        src/
-          App.jsx          # React widget
-          hooks/
-            useOpenAiGlobal.js
-        dist/
-          widget.js        # bundled JS (inlined into template)
-          widget.css       # bundled CSS (inlined into template)
-      checkers/
-        src/
-          App.jsx
-          hooks/
-            useOpenAiGlobal.js
-        dist/
-          widget.js
-          widget.css
-      blackjack/
-        src/
-          App.jsx
-          hooks/
-            useOpenAiGlobal.js
-        dist/
-          widget.js
-          widget.css
-  README.md
 ```
