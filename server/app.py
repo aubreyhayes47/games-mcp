@@ -18,10 +18,12 @@ CHESS_WIDGET_VERSION = "v1"
 CHECKERS_WIDGET_VERSION = "v1"
 BLACKJACK_WIDGET_VERSION = "v1"
 RPG_DICE_WIDGET_VERSION = "v1"
+SEA_BATTLE_WIDGET_VERSION = "v1"
 CHESS_WIDGET_URI = f"ui://widget/chess-board-{CHESS_WIDGET_VERSION}.html"
 CHECKERS_WIDGET_URI = f"ui://widget/checkers-board-{CHECKERS_WIDGET_VERSION}.html"
 BLACKJACK_WIDGET_URI = f"ui://widget/blackjack-board-{BLACKJACK_WIDGET_VERSION}.html"
 RPG_DICE_WIDGET_URI = f"ui://widget/rpg-dice-{RPG_DICE_WIDGET_VERSION}.html"
+SEA_BATTLE_WIDGET_URI = f"ui://widget/sea-battle-{SEA_BATTLE_WIDGET_VERSION}.html"
 WIDGET_MIME_TYPE = "text/html+skybridge"
 WIDGET_DOMAIN = os.getenv("WIDGET_DOMAIN", "https://chess-mcp.example.com")
 MCP_SERVER_ORIGIN = os.getenv("MCP_SERVER_ORIGIN")
@@ -64,6 +66,11 @@ RPG_DICE_WIDGET_TEMPLATE_PATH = (
     / "templates"
     / f"rpg-dice-{RPG_DICE_WIDGET_VERSION}.html"
 )
+SEA_BATTLE_WIDGET_TEMPLATE_PATH = (
+    Path(__file__).resolve().parent
+    / "templates"
+    / f"sea-battle-{SEA_BATTLE_WIDGET_VERSION}.html"
+)
 
 CHESS_WIDGET_JS_PATH = CHESS_WIDGET_BUILD_DIR / "widget.js"
 CHESS_WIDGET_CSS_PATH = CHESS_WIDGET_BUILD_DIR / "widget.css"
@@ -75,6 +82,9 @@ BLACKJACK_WIDGET_CSS_PATH = BLACKJACK_WIDGET_BUILD_DIR / "widget.css"
 RPG_DICE_WIDGET_BUILD_DIR = WIDGET_BUILD_ROOT / "rpg-dice" / "dist"
 RPG_DICE_WIDGET_JS_PATH = RPG_DICE_WIDGET_BUILD_DIR / "widget.js"
 RPG_DICE_WIDGET_CSS_PATH = RPG_DICE_WIDGET_BUILD_DIR / "widget.css"
+SEA_BATTLE_WIDGET_BUILD_DIR = WIDGET_BUILD_ROOT / "sea-battle" / "dist"
+SEA_BATTLE_WIDGET_JS_PATH = SEA_BATTLE_WIDGET_BUILD_DIR / "widget.js"
+SEA_BATTLE_WIDGET_CSS_PATH = SEA_BATTLE_WIDGET_BUILD_DIR / "widget.css"
 
 app = FastMCP("games-mcp")
 register_tools(app)
@@ -140,6 +150,15 @@ def rpg_dice_widget_template() -> str:
     )
 
 
+@app.resource(SEA_BATTLE_WIDGET_URI, mime_type=WIDGET_MIME_TYPE)
+def sea_battle_widget_template() -> str:
+    return load_widget_template(
+        SEA_BATTLE_WIDGET_TEMPLATE_PATH,
+        SEA_BATTLE_WIDGET_JS_PATH,
+        SEA_BATTLE_WIDGET_CSS_PATH,
+    )
+
+
 @app._mcp_server.read_resource()
 async def read_resource(uri: str):
     resource = await app._resource_manager.get_resource(uri)
@@ -153,6 +172,7 @@ async def read_resource(uri: str):
         CHECKERS_WIDGET_URI,
         BLACKJACK_WIDGET_URI,
         RPG_DICE_WIDGET_URI,
+        SEA_BATTLE_WIDGET_URI,
     }:
         meta = {
             "openai/widgetDomain": WIDGET_DOMAIN,

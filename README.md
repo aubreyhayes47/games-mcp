@@ -18,6 +18,7 @@ state. You type moves in chat and watch the board or table update instantly.
 * Checkers (algebraic square notation)
 * Blackjack (LLM dealer constrained to legal actions, with betting)
 * RPG dice (d4, d6, d8, d10, d12, d20, d100)
+* Sea Battle (Battleship-style, LLM opponent)
 
 ## 🧭 Roadmap (planned additions)
 
@@ -25,7 +26,6 @@ state. You type moves in chat and watch the board or table update instantly.
 * Slot machine
 * Four-in-a-Row
 * Tic-Tac-Toe
-* Sea Battle
 * Roulette (American)
 
 ## ⚡ Quickstart (Local)

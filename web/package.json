@@ -9,11 +9,13 @@
     "dev:checkers": "WIDGET=checkers vite",
     "dev:blackjack": "WIDGET=blackjack vite",
     "dev:rpg-dice": "WIDGET=rpg-dice vite",
-    "build": "npm run build:chess && npm run build:checkers && npm run build:blackjack && npm run build:rpg-dice",
+    "dev:sea-battle": "WIDGET=sea-battle vite",
+    "build": "npm run build:chess && npm run build:checkers && npm run build:blackjack && npm run build:rpg-dice && npm run build:sea-battle",
     "build:chess": "WIDGET=chess vite build",
     "build:checkers": "WIDGET=checkers vite build",
     "build:blackjack": "WIDGET=blackjack vite build",
     "build:rpg-dice": "WIDGET=rpg-dice vite build",
+    "build:sea-battle": "WIDGET=sea-battle vite build",
     "preview": "vite preview"
   },
   "dependencies": {

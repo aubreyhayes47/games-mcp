@@ -325,3 +325,128 @@ If illegal:
   "total": 20
 }
 ```
+
+## Sea Battle
+
+### Sea Battle state format
+
+```
+P:<player_board>|O:<opponent_board>|F:<fog_board>|OF:<opponent_fog>|T:<turn>|ST:<status>|LA:<last_action>|W:<winner>
+```
+
+Boards are 10x10 rows using:
+
+- `.` empty
+- `S` ship (only on full boards)
+- `H` hit
+- `M` miss
+
+### Tool: `new_sea_battle_game`
+
+**Output (structuredContent)**
+
+```json
+{
+  "type": "sea_battle_snapshot",
+  "gameType": "sea_battle",
+  "gameId": "g_123",
+  "state": "<STATE>",
+  "status": "in_progress",
+  "turn": "player"
+}
+```
+
+### Tool: `apply_sea_battle_move`
+
+**Input**
+
+* `gameId`
+* `state`
+* `coord` (string): `A1` through `J10`
+
+**Output (structuredContent)**
+
+```json
+{
+  "type": "sea_battle_snapshot",
+  "gameType": "sea_battle",
+  "gameId": "g_123",
+  "legal": true,
+  "state": "<NEW_STATE>",
+  "status": "in_progress",
+  "turn": "opponent",
+  "lastAction": "B4:hit"
+}
+```
+
+If illegal:
+
+```json
+{
+  "type": "sea_battle_snapshot",
+  "gameType": "sea_battle",
+  "gameId": "g_123",
+  "legal": false,
+  "state": "<UNCHANGED_STATE>",
+  "error": "Illegal move."
+}
+```
+
+### Tool: `legal_sea_battle_moves` (read-only)
+
+**Input**
+
+* `state`
+
+**Output (structuredContent)**
+
+```json
+{
+  "type": "legal_moves",
+  "gameType": "sea_battle",
+  "moves": ["A1", "A2", "B1"]
+}
+```
+
+### Tool: `choose_sea_battle_opponent_move`
+
+**Input**
+
+* `state`
+
+**Output (structuredContent)**
+
+```json
+{
+  "type": "opponent_choice",
+  "gameType": "sea_battle",
+  "moves": ["A1", "A2", "B1"],
+  "policy": {
+    "mustChooseFromMoves": true,
+    "chooseExactlyOne": true
+  }
+}
+```
+
+## RPG Dice
+
+### Tool: `roll_rpg_dice`
+
+**Input**
+
+* `sides` (required): 4, 6, 8, 10, 12, 20, 100
+* `count` (optional, default 1)
+
+**Output (structuredContent)**
+
+```json
+{
+  "type": "rpg_dice_roll",
+  "gameType": "rpg_dice",
+  "legal": true,
+  "sides": 20,
+  "count": 2,
+  "rolls": [13, 7],
+  "total": 20
+}
+```

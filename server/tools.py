@@ -20,6 +20,13 @@ try:
         serialize_state as serialize_blackjack_state,
     )
     from .rpg_dice_rules import roll_dice
+    from .sea_battle_rules import (
+        apply_sea_battle_move as apply_sea_battle_move_rule,
+        initial_sea_battle_state,
+        legal_sea_battle_moves as legal_sea_battle_moves_rule,
+        opponent_move_candidates as sea_battle_opponent_moves,
+        parse_state as parse_sea_battle_state,
+    )
     from .checkers_rules import (
         all_checkers_moves,
         apply_checkers_move as apply_checkers_move_rule,
@@ -38,6 +45,13 @@ except ImportError:  # pragma: no cover - fallback for script execution
         serialize_state as serialize_blackjack_state,
     )
     from rpg_dice_rules import roll_dice
+    from sea_battle_rules import (
+        apply_sea_battle_move as apply_sea_battle_move_rule,
+        initial_sea_battle_state,
+        legal_sea_battle_moves as legal_sea_battle_moves_rule,
+        opponent_move_candidates as sea_battle_opponent_moves,
+        parse_state as parse_sea_battle_state,
+    )
     from checkers_rules import (
         all_checkers_moves,
         apply_checkers_move as apply_checkers_move_rule,
@@ -50,6 +64,7 @@ CHESS_WIDGET_TEMPLATE_URI = "ui://widget/chess-board-v1.html"
 CHECKERS_WIDGET_TEMPLATE_URI = "ui://widget/checkers-board-v1.html"
 BLACKJACK_WIDGET_TEMPLATE_URI = "ui://widget/blackjack-board-v1.html"
 RPG_DICE_WIDGET_TEMPLATE_URI = "ui://widget/rpg-dice-v1.html"
+SEA_BATTLE_WIDGET_TEMPLATE_URI = "ui://widget/sea-battle-v1.html"
 OPPONENT_MOVE_CAP = 200
 
 
@@ -485,3 +500,107 @@ def register_tools(app: FastMCP) -> None:
             "total": sum(result.rolls),
         }
         return ToolResult(content=[], structured_content=payload)
+
+    @app.tool(
+        name="new_sea_battle_game",
+        description="Start a new Sea Battle game for chat-driven play.",
+        meta=_tool_meta(output_template_uri=SEA_BATTLE_WIDGET_TEMPLATE_URI),
+    )
+    def new_sea_battle_game() -> ToolResult:
+        game_id = f"g_{uuid.uuid4().hex}"
+        state = initial_sea_battle_state()
+        payload = {
+            "type": "sea_battle_snapshot",
+            "gameType": "sea_battle",
+            "gameId": game_id,
+            "state": state,
+            "status": "in_progress",
+            "turn": "player",
+        }
+        return ToolResult(content=[], structured_content=payload)
+
+    @app.tool(
+        name="apply_sea_battle_move",
+        description=(
+            "Validate and apply a Sea Battle move to the provided state. Intended for "
+            "the model to call after the user types a coordinate in chat."
+        ),
+        meta=_tool_meta(output_template_uri=SEA_BATTLE_WIDGET_TEMPLATE_URI),
+        annotations={
+            "readOnlyHint": False,
+            "openWorldHint": False,
+            "destructiveHint": False,
+        },
+    )
+    def apply_sea_battle_move(gameId: str, state: str, coord: str) -> ToolResult:  # noqa: N803
+        result = apply_sea_battle_move_rule(state, coord)
+        if not result.legal:
+            payload = {
+                "type": "sea_battle_snapshot",
+                "gameType": "sea_battle",
+                "gameId": gameId,
+                "legal": False,
+                "state": result.state,
+                "error": result.error or "Illegal move.",
+            }
+            return ToolResult(content=[], structured_content=payload)
+
+        payload = {
+            "type": "sea_battle_snapshot",
+            "gameType": "sea_battle",
+            "gameId": gameId,
+            "legal": True,
+            "state": result.state,
+            "status": result.status,
+            "turn": result.turn,
+            "lastAction": result.last_action,
+        }
+        if result.winner:
+            payload["winner"] = result.winner
+        return ToolResult(content=[], structured_content=payload)
+
+    @app.tool(
+        name="legal_sea_battle_moves",
+        description=(
+            "List legal Sea Battle moves for a given state so the model can interpret "
+            "chat input."
+        ),
+        meta=_tool_meta(),
+        annotations={"readOnlyHint": True},
+    )
+    def legal_sea_battle_moves(state: str) -> ToolResult:
+        payload = {
+            "type": "legal_moves",
+            "gameType": "sea_battle",
+            "moves": legal_sea_battle_moves_rule(state),
+        }
+        return ToolResult(content=[], structured_content=payload)
+
+    @app.tool(
+        name="choose_sea_battle_opponent_move",
+        description=(
+            "Return legal moves and opponent selection policy for the model-driven "
+            "Sea Battle opponent turn loop."
+        ),
+        meta=_tool_meta(),
+    )
+    def choose_sea_battle_opponent_move(state: str) -> ToolResult:
+        moves = sea_battle_opponent_moves(state, limit=OPPONENT_MOVE_CAP)
+        content = []
+        if not moves:
+            content = [
+                {
+                    "type": "text",
+                    "text": "No legal moves available; the game is over.",
+                }
+            ]
+        payload = {
+            "type": "opponent_choice",
+            "gameType": "sea_battle",
+            "moves": moves,
+            "policy": {
+                "mustChooseFromMoves": True,
+                "chooseExactlyOne": True,
+            },
+        }
+        return ToolResult(content=content, structured_content=payload)

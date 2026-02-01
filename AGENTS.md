@@ -8,9 +8,9 @@ Stack preference: **Python (FastMCP)** for the MCP server, React widget for UI.
 ## 0) One-paragraph goal
 
 Build a minimal ChatGPT Apps SDK **games library** that exposes authoritative game tools and a
-display-only widget UI. Chess, checkers, blackjack, and RPG dice are implemented today; planned
-additions include heads-up NL Hold'em (LLM opponent), a slot machine, Four-in-a-Row, Tic-Tac-Toe,
-Sea Battle, and Roulette (American).
+display-only widget UI. Chess, checkers, blackjack, RPG dice, and Sea Battle are implemented
+today; planned additions include heads-up NL Hold'em (LLM opponent), a slot machine,
+Four-in-a-Row, Tic-Tac-Toe, and Roulette (American).
 
 ## 1) Definition of Done (current implementations: chess + checkers + blackjack)
 

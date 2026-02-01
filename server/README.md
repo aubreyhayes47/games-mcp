@@ -24,6 +24,7 @@ npm run build
 npm run build:checkers
 npm run build:blackjack
 npm run build:rpg-dice
+npm run build:sea-battle
 ```
 
 The server reads `web/widgets/<game>/dist/widget.js` and
@@ -143,6 +144,34 @@ auto-renders widget output from `new_*` and `apply_*` tool responses.
 {
   "sides": 20,
   "count": 2
+}
+```
+
+```json
+// new_sea_battle_game
+{}
+```
+
+```json
+// legal_sea_battle_moves
+{
+  "state": "P:<board>|O:<board>|F:<fog>|OF:<fog>|T:player|ST:in_progress|LA:-|W:-"
+}
+```
+
+```json
+// apply_sea_battle_move
+{
+  "gameId": "g_example",
+  "state": "P:<board>|O:<board>|F:<fog>|OF:<fog>|T:player|ST:in_progress|LA:-|W:-",
+  "coord": "A1"
+}
+```
+
+```json
+// choose_sea_battle_opponent_move
+{
+  "state": "P:<board>|O:<board>|F:<fog>|OF:<fog>|T:opponent|ST:in_progress|LA:A1:hit|W:-"
 }
 ```
 

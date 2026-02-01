@@ -7,6 +7,7 @@ WIDGET_URI = "ui://widget/chess-board-v1.html"
 CHECKERS_WIDGET_URI = "ui://widget/checkers-board-v1.html"
 BLACKJACK_WIDGET_URI = "ui://widget/blackjack-board-v1.html"
 RPG_DICE_WIDGET_URI = "ui://widget/rpg-dice-v1.html"
+SEA_BATTLE_WIDGET_URI = "ui://widget/sea-battle-v1.html"
 
 
 class McpHttpClient:
@@ -227,6 +228,56 @@ def run_rpg_dice(client: McpHttpClient) -> None:
     print("roll_rpg_dice:", roll_payload)
 
 
+def run_sea_battle(client: McpHttpClient) -> None:
+    _, widget = client.request("resources/read", {"uri": SEA_BATTLE_WIDGET_URI})
+    widget_text = widget["result"]["contents"][0].get("text") or widget["result"][
+        "contents"
+    ][0].get("content")
+
+    _, new_sea_battle_game = client.request(
+        "tools/call", {"name": "new_sea_battle_game", "arguments": {}}
+    )
+    snapshot = new_sea_battle_game["result"]["structuredContent"]
+    _, legal_sea_battle_moves = client.request(
+        "tools/call",
+        {
+            "name": "legal_sea_battle_moves",
+            "arguments": {"state": snapshot["state"]},
+        },
+    )
+    moves = legal_sea_battle_moves["result"]["structuredContent"]["moves"]
+    move = moves[0]
+    _, applied_sea_battle_move = client.request(
+        "tools/call",
+        {
+            "name": "apply_sea_battle_move",
+            "arguments": {
+                "gameId": snapshot["gameId"],
+                "state": snapshot["state"],
+                "coord": move,
+            },
+        },
+    )
+    apply_snapshot = applied_sea_battle_move["result"]["structuredContent"]
+    _, choose_sea_battle_opponent_move = client.request(
+        "tools/call",
+        {
+            "name": "choose_sea_battle_opponent_move",
+            "arguments": {"state": apply_snapshot["state"]},
+        },
+    )
+
+    print("\n=== Sea Battle ===")
+    print("widget_bytes:", len(widget_text) if widget_text else 0)
+    print("new_sea_battle_game:", snapshot)
+    print("legal_sea_battle_moves_count:", len(moves))
+    print("apply_sea_battle_move:", apply_snapshot)
+    print(
+        "choose_sea_battle_opponent_move_count:",
+        len(choose_sea_battle_opponent_move["result"]["structuredContent"]["moves"]),
+    )
+
+
 def main() -> None:
     client = McpHttpClient(URL)
 
@@ -262,6 +313,7 @@ def main() -> None:
     run_checkers(client)
     run_blackjack(client)
     run_rpg_dice(client)
+    run_sea_battle(client)
 
 
 if __name__ == "__main__":
