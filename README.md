@@ -24,9 +24,7 @@ state. You type moves in chat and watch the board or table update instantly.
 
 ## 🧭 Roadmap (planned additions)
 
-* Heads-up NL Hold'em (LLM opponent)
 * Tic-Tac-Toe
-* Roulette (American)
 
 ## ⚡ Quickstart (Local)
 

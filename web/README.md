@@ -2,8 +2,7 @@
 
 This directory contains the React + Vite widgets for the games MCP library.
 Chess, checkers, blackjack, RPG dice, Sea Battle, the slot machine, and
-Four-in-a-Row are implemented today; planned additions include heads-up NL
-Hold'em (LLM opponent), Tic-Tac-Toe, and Roulette (American).
+Four-in-a-Row are implemented today; planned additions include Tic-Tac-Toe.
 
 ## Local development
 
