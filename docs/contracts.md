@@ -303,28 +303,6 @@ If illegal:
 }
 ```
 
-## RPG Dice
-
-### Tool: `roll_rpg_dice`
-
-**Input**
-
-* `sides` (required): 4, 6, 8, 10, 12, 20, 100
-* `count` (optional, default 1)
-
-**Output (structuredContent)**
-
-```json
-{
-  "type": "rpg_dice_roll",
-  "gameType": "rpg_dice",
-  "legal": true,
-  "sides": 20,
-  "count": 2,
-  "rolls": [13, 7],
-  "total": 20
-}
-```
 
 ## Sea Battle
 
@@ -425,6 +403,83 @@ If illegal:
     "mustChooseFromMoves": true,
     "chooseExactlyOne": true
   }
+}
+```
+
+## Slot Machine
+
+### Slot state format
+
+```
+R:<reels>|BK:<stack>|B:<bet>|P:<payout>|ST:<status>|LA:<last_action>
+```
+
+### Tool: `new_slot_game`
+
+**Input**
+
+* `stack` (optional, default 1000)
+* `bet` (optional, default 10 or `stack` if smaller)
+
+**Output (structuredContent)**
+
+```json
+{
+  "type": "slot_snapshot",
+  "gameType": "slot",
+  "state": "<STATE>",
+  "stack": 1000,
+  "bet": 10,
+  "reels": [],
+  "payout": 0,
+  "status": "in_progress",
+  "lastAction": "-"
+}
+```
+
+### Tool: `spin_slot`
+
+**Input**
+
+* `state`
+
+**Output (structuredContent)**
+
+```json
+{
+  "type": "slot_snapshot",
+  "gameType": "slot",
+  "legal": true,
+  "state": "<NEW_STATE>",
+  "stack": 1010,
+  "bet": 10,
+  "reels": ["7", "7", "7"],
+  "payout": 100,
+  "status": "in_progress",
+  "lastAction": "spin"
+}
+```
+
+## RPG Dice
+
+### Tool: `roll_rpg_dice`
+
+**Input**
+
+* `sides` (required): 4, 6, 8, 10, 12, 20, 100
+* `count` (optional, default 1)
+
+**Output (structuredContent)**
+
+```json
+{
+  "type": "rpg_dice_roll",
+  "gameType": "rpg_dice",
+  "legal": true,
+  "sides": 20,
+  "count": 2,
+  "rolls": [13, 7],
+  "total": 20
 }
 ```
 

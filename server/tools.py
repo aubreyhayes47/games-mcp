@@ -27,6 +27,11 @@ try:
         opponent_move_candidates as sea_battle_opponent_moves,
         parse_state as parse_sea_battle_state,
     )
+    from .slot_rules import (
+        initial_slot_state,
+        serialize_state as serialize_slot_state,
+        spin_slot as spin_slot_rule,
+    )
     from .checkers_rules import (
         all_checkers_moves,
         apply_checkers_move as apply_checkers_move_rule,
@@ -52,6 +57,11 @@ except ImportError:  # pragma: no cover - fallback for script execution
         opponent_move_candidates as sea_battle_opponent_moves,
         parse_state as parse_sea_battle_state,
     )
+    from slot_rules import (
+        initial_slot_state,
+        serialize_state as serialize_slot_state,
+        spin_slot as spin_slot_rule,
+    )
     from checkers_rules import (
         all_checkers_moves,
         apply_checkers_move as apply_checkers_move_rule,
@@ -65,6 +75,7 @@ CHECKERS_WIDGET_TEMPLATE_URI = "ui://widget/checkers-board-v1.html"
 BLACKJACK_WIDGET_TEMPLATE_URI = "ui://widget/blackjack-board-v1.html"
 RPG_DICE_WIDGET_TEMPLATE_URI = "ui://widget/rpg-dice-v1.html"
 SEA_BATTLE_WIDGET_TEMPLATE_URI = "ui://widget/sea-battle-v1.html"
+SLOT_WIDGET_TEMPLATE_URI = "ui://widget/slot-v1.html"
 OPPONENT_MOVE_CAP = 200
 
 
@@ -604,3 +615,75 @@ def register_tools(app: FastMCP) -> None:
             },
         }
         return ToolResult(content=content, structured_content=payload)
+
+    @app.tool(
+        name="new_slot_game",
+        description="Start a new slot machine session with an optional stack and bet.",
+        meta=_tool_meta(output_template_uri=SLOT_WIDGET_TEMPLATE_URI),
+    )
+    def new_slot_game(
+        stack: int | float | None = None,
+        bet: int | float | None = None,
+    ) -> ToolResult:
+        resolved_stack = 1000.0 if stack is None else float(stack)
+        resolved_bet = float(bet) if bet is not None else min(10.0, resolved_stack)
+        try:
+            state = initial_slot_state(stack=resolved_stack, bet=resolved_bet)
+        except ValueError as exc:
+            payload = {
+                "type": "slot_snapshot",
+                "gameType": "slot",
+                "legal": False,
+                "state": "",
+                "error": str(exc),
+            }
+            return ToolResult(content=[], structured_content=payload)
+
+        payload = {
+            "type": "slot_snapshot",
+            "gameType": "slot",
+            "state": serialize_slot_state(state),
+            "stack": state.stack,
+            "bet": state.bet,
+            "reels": state.reels,
+            "payout": state.payout,
+            "status": state.status,
+            "lastAction": state.last_action,
+        }
+        return ToolResult(content=[], structured_content=payload)
+
+    @app.tool(
+        name="spin_slot",
+        description="Spin the slot reels for the given state.",
+        meta=_tool_meta(output_template_uri=SLOT_WIDGET_TEMPLATE_URI),
+        annotations={
+            "readOnlyHint": False,
+            "openWorldHint": False,
+            "destructiveHint": False,
+        },
+    )
+    def spin_slot(state: str) -> ToolResult:
+        result = spin_slot_rule(state)
+        if not result["legal"]:
+            payload = {
+                "type": "slot_snapshot",
+                "gameType": "slot",
+                "legal": False,
+                "state": result["state"],
+                "error": result.get("error") or "Illegal spin.",
+            }
+            return ToolResult(content=[], structured_content=payload)
+
+        payload = {
+            "type": "slot_snapshot",
+            "gameType": "slot",
+            "legal": True,
+            "state": result["state"],
+            "stack": result["stack"],
+            "bet": result["bet"],
+            "reels": result["reels"],
+            "payout": result["payout"],
+            "status": result["status"],
+            "lastAction": result["lastAction"],
+        }
+        return ToolResult(content=[], structured_content=payload)

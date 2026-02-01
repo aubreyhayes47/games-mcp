@@ -25,6 +25,7 @@ npm run build:checkers
 npm run build:blackjack
 npm run build:rpg-dice
 npm run build:sea-battle
+npm run build:slot
 ```
 
 The server reads `web/widgets/<game>/dist/widget.js` and
@@ -172,6 +173,21 @@ auto-renders widget output from `new_*` and `apply_*` tool responses.
 // choose_sea_battle_opponent_move
 {
   "state": "P:<board>|O:<board>|F:<fog>|OF:<fog>|T:opponent|ST:in_progress|LA:A1:hit|W:-"
+}
+```
+
+```json
+// new_slot_game
+{
+  "stack": 1000,
+  "bet": 10
+}
+```
+
+```json
+// spin_slot
+{
+  "state": "R:-|BK:1000|B:10|P:0|ST:in_progress|LA:-"
 }
 ```
 
