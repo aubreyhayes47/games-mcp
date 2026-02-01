@@ -460,6 +460,107 @@ R:<reels>|BK:<stack>|B:<bet>|P:<payout>|ST:<status>|LA:<last_action>
 }
 ```
 
+## Four-in-a-Row
+
+### Four-in-a-Row state format
+
+```
+G:<grid>|T:<turn>|ST:<status>|LA:<last_action>|W:<winner>
+```
+
+Grid is 6 rows of 7 chars using:
+
+- `.` empty
+- `R` player
+- `Y` opponent
+
+### Tool: `new_four_in_a_row_game`
+
+**Output (structuredContent)**
+
+```json
+{
+  "type": "four_in_a_row_snapshot",
+  "gameType": "four_in_a_row",
+  "gameId": "g_123",
+  "state": "<STATE>",
+  "status": "in_progress",
+  "turn": "player"
+}
+```
+
+### Tool: `apply_four_in_a_row_move`
+
+**Input**
+
+* `gameId`
+* `state`
+* `column` (integer): 1 through 7
+
+**Output (structuredContent)**
+
+```json
+{
+  "type": "four_in_a_row_snapshot",
+  "gameType": "four_in_a_row",
+  "gameId": "g_123",
+  "legal": true,
+  "state": "<NEW_STATE>",
+  "status": "in_progress",
+  "turn": "opponent",
+  "lastAction": "4"
+}
+```
+
+If illegal:
+
+```json
+{
+  "type": "four_in_a_row_snapshot",
+  "gameType": "four_in_a_row",
+  "gameId": "g_123",
+  "legal": false,
+  "state": "<UNCHANGED_STATE>",
+  "error": "Illegal move."
+}
+```
+
+### Tool: `legal_four_in_a_row_moves` (read-only)
+
+**Input**
+
+* `state`
+
+**Output (structuredContent)**
+
+```json
+{
+  "type": "legal_moves",
+  "gameType": "four_in_a_row",
+  "moves": [1, 2, 3, 4]
+}
+```
+
+### Tool: `choose_four_in_a_row_opponent_move`
+
+**Input**
+
+* `state`
+
+**Output (structuredContent)**
+
+```json
+{
+  "type": "opponent_choice",
+  "gameType": "four_in_a_row",
+  "moves": [1, 2, 3, 4],
+  "policy": {
+    "mustChooseFromMoves": true,
+    "chooseExactlyOne": true
+  }
+}
+```
+
 ## RPG Dice
 
 ### Tool: `roll_rpg_dice`

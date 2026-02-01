@@ -20,11 +20,11 @@ state. You type moves in chat and watch the board or table update instantly.
 * RPG dice (d4, d6, d8, d10, d12, d20, d100)
 * Sea Battle (Battleship-style, LLM opponent)
 * Slot machine (classic table with weighted symbols)
+* Four-in-a-Row (classic Connect 4)
 
 ## 🧭 Roadmap (planned additions)
 
 * Heads-up NL Hold'em (LLM opponent)
-* Four-in-a-Row
 * Tic-Tac-Toe
 * Roulette (American)
 

@@ -32,6 +32,12 @@ try:
         serialize_state as serialize_slot_state,
         spin_slot as spin_slot_rule,
     )
+    from .four_in_a_row_rules import (
+        apply_four_in_a_row_move as apply_four_in_a_row_move_rule,
+        initial_four_in_a_row_state,
+        legal_four_in_a_row_moves as legal_four_in_a_row_moves_rule,
+        opponent_move_candidates as four_in_a_row_opponent_moves,
+    )
     from .checkers_rules import (
         all_checkers_moves,
         apply_checkers_move as apply_checkers_move_rule,
@@ -62,6 +68,12 @@ except ImportError:  # pragma: no cover - fallback for script execution
         serialize_state as serialize_slot_state,
         spin_slot as spin_slot_rule,
     )
+    from four_in_a_row_rules import (
+        apply_four_in_a_row_move as apply_four_in_a_row_move_rule,
+        initial_four_in_a_row_state,
+        legal_four_in_a_row_moves as legal_four_in_a_row_moves_rule,
+        opponent_move_candidates as four_in_a_row_opponent_moves,
+    )
     from checkers_rules import (
         all_checkers_moves,
         apply_checkers_move as apply_checkers_move_rule,
@@ -76,6 +88,7 @@ BLACKJACK_WIDGET_TEMPLATE_URI = "ui://widget/blackjack-board-v1.html"
 RPG_DICE_WIDGET_TEMPLATE_URI = "ui://widget/rpg-dice-v1.html"
 SEA_BATTLE_WIDGET_TEMPLATE_URI = "ui://widget/sea-battle-v1.html"
 SLOT_WIDGET_TEMPLATE_URI = "ui://widget/slot-v1.html"
+FOUR_IN_A_ROW_WIDGET_TEMPLATE_URI = "ui://widget/four-in-a-row-v1.html"
 OPPONENT_MOVE_CAP = 200
 
 
@@ -687,3 +700,111 @@ def register_tools(app: FastMCP) -> None:
             "lastAction": result["lastAction"],
         }
         return ToolResult(content=[], structured_content=payload)
+
+    @app.tool(
+        name="new_four_in_a_row_game",
+        description="Start a new Four-in-a-Row game for chat-driven play.",
+        meta=_tool_meta(output_template_uri=FOUR_IN_A_ROW_WIDGET_TEMPLATE_URI),
+    )
+    def new_four_in_a_row_game() -> ToolResult:
+        game_id = f"g_{uuid.uuid4().hex}"
+        state = initial_four_in_a_row_state()
+        payload = {
+            "type": "four_in_a_row_snapshot",
+            "gameType": "four_in_a_row",
+            "gameId": game_id,
+            "state": state,
+            "status": "in_progress",
+            "turn": "player",
+        }
+        return ToolResult(content=[], structured_content=payload)
+
+    @app.tool(
+        name="apply_four_in_a_row_move",
+        description=(
+            "Validate and apply a Four-in-a-Row move to the provided state. Intended for "
+            "the model to call after the user types a column number in chat."
+        ),
+        meta=_tool_meta(output_template_uri=FOUR_IN_A_ROW_WIDGET_TEMPLATE_URI),
+        annotations={
+            "readOnlyHint": False,
+            "openWorldHint": False,
+            "destructiveHint": False,
+        },
+    )
+    def apply_four_in_a_row_move(
+        gameId: str,
+        state: str,
+        column: int,
+    ) -> ToolResult:  # noqa: N803
+        result = apply_four_in_a_row_move_rule(state, column)
+        if not result.legal:
+            payload = {
+                "type": "four_in_a_row_snapshot",
+                "gameType": "four_in_a_row",
+                "gameId": gameId,
+                "legal": False,
+                "state": result.state,
+                "error": result.error or "Illegal move.",
+            }
+            return ToolResult(content=[], structured_content=payload)
+
+        payload = {
+            "type": "four_in_a_row_snapshot",
+            "gameType": "four_in_a_row",
+            "gameId": gameId,
+            "legal": True,
+            "state": result.state,
+            "status": result.status,
+            "turn": result.turn,
+            "lastAction": result.last_action,
+        }
+        if result.winner:
+            payload["winner"] = result.winner
+        return ToolResult(content=[], structured_content=payload)
+
+    @app.tool(
+        name="legal_four_in_a_row_moves",
+        description=(
+            "List legal Four-in-a-Row moves for a given state so the model can interpret "
+            "chat input."
+        ),
+        meta=_tool_meta(),
+        annotations={"readOnlyHint": True},
+    )
+    def legal_four_in_a_row_moves(state: str) -> ToolResult:
+        payload = {
+            "type": "legal_moves",
+            "gameType": "four_in_a_row",
+            "moves": legal_four_in_a_row_moves_rule(state),
+        }
+        return ToolResult(content=[], structured_content=payload)
+
+    @app.tool(
+        name="choose_four_in_a_row_opponent_move",
+        description=(
+            "Return legal moves and opponent selection policy for the model-driven "
+            "Four-in-a-Row opponent turn loop."
+        ),
+        meta=_tool_meta(),
+    )
+    def choose_four_in_a_row_opponent_move(state: str) -> ToolResult:
+        moves = four_in_a_row_opponent_moves(state, limit=OPPONENT_MOVE_CAP)
+        content = []
+        if not moves:
+            content = [
+                {
+                    "type": "text",
+                    "text": "No legal moves available; the game is over.",
+                }
+            ]
+        payload = {
+            "type": "opponent_choice",
+            "gameType": "four_in_a_row",
+            "moves": moves,
+            "policy": {
+                "mustChooseFromMoves": True,
+                "chooseExactlyOne": True,
+            },
+        }
+        return ToolResult(content=content, structured_content=payload)

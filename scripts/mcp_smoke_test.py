@@ -9,6 +9,7 @@ BLACKJACK_WIDGET_URI = "ui://widget/blackjack-board-v1.html"
 RPG_DICE_WIDGET_URI = "ui://widget/rpg-dice-v1.html"
 SEA_BATTLE_WIDGET_URI = "ui://widget/sea-battle-v1.html"
 SLOT_WIDGET_URI = "ui://widget/slot-v1.html"
+FOUR_IN_A_ROW_WIDGET_URI = "ui://widget/four-in-a-row-v1.html"
 
 
 class McpHttpClient:
@@ -300,6 +301,56 @@ def run_slot(client: McpHttpClient) -> None:
     print("spin_slot:", spin_payload)
 
 
+def run_four_in_a_row(client: McpHttpClient) -> None:
+    _, widget = client.request("resources/read", {"uri": FOUR_IN_A_ROW_WIDGET_URI})
+    widget_text = widget["result"]["contents"][0].get("text") or widget["result"][
+        "contents"
+    ][0].get("content")
+
+    _, new_game = client.request(
+        "tools/call", {"name": "new_four_in_a_row_game", "arguments": {}}
+    )
+    snapshot = new_game["result"]["structuredContent"]
+    _, legal_moves = client.request(
+        "tools/call",
+        {
+            "name": "legal_four_in_a_row_moves",
+            "arguments": {"state": snapshot["state"]},
+        },
+    )
+    moves = legal_moves["result"]["structuredContent"]["moves"]
+    move = moves[0]
+    _, applied = client.request(
+        "tools/call",
+        {
+            "name": "apply_four_in_a_row_move",
+            "arguments": {
+                "gameId": snapshot["gameId"],
+                "state": snapshot["state"],
+                "column": move,
+            },
+        },
+    )
+    apply_snapshot = applied["result"]["structuredContent"]
+    _, choose_opponent = client.request(
+        "tools/call",
+        {
+            "name": "choose_four_in_a_row_opponent_move",
+            "arguments": {"state": apply_snapshot["state"]},
+        },
+    )
+
+    print("\n=== Four-in-a-Row ===")
+    print("widget_bytes:", len(widget_text) if widget_text else 0)
+    print("new_four_in_a_row_game:", snapshot)
+    print("legal_four_in_a_row_moves_count:", len(moves))
+    print("apply_four_in_a_row_move:", apply_snapshot)
+    print(
+        "choose_four_in_a_row_opponent_move_count:",
+        len(choose_opponent["result"]["structuredContent"]["moves"]),
+    )
+
+
 def main() -> None:
     client = McpHttpClient(URL)
 
@@ -337,6 +388,7 @@ def main() -> None:
     run_rpg_dice(client)
     run_sea_battle(client)
     run_slot(client)
+    run_four_in_a_row(client)
 
 
 if __name__ == "__main__":

@@ -26,6 +26,7 @@ npm run build:blackjack
 npm run build:rpg-dice
 npm run build:sea-battle
 npm run build:slot
+npm run build:four-in-a-row
 ```
 
 The server reads `web/widgets/<game>/dist/widget.js` and
@@ -188,6 +189,34 @@ auto-renders widget output from `new_*` and `apply_*` tool responses.
 // spin_slot
 {
   "state": "R:-|BK:1000|B:10|P:0|ST:in_progress|LA:-"
+}
+```
+
+```json
+// new_four_in_a_row_game
+{}
+```
+
+```json
+// legal_four_in_a_row_moves
+{
+  "state": "G:......./......./......./......./......./.......|T:player|ST:in_progress|LA:-|W:-"
+}
+```
+
+```json
+// apply_four_in_a_row_move
+{
+  "gameId": "g_example",
+  "state": "G:......./......./......./......./......./.......|T:player|ST:in_progress|LA:-|W:-",
+  "column": 4
+}
+```
+
+```json
+// choose_four_in_a_row_opponent_move
+{
+  "state": "G:......./......./......./......./......./...R...|T:opponent|ST:in_progress|LA:4|W:-"
 }
 ```
 
