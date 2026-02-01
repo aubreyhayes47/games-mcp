@@ -166,7 +166,7 @@ def test_blackjack_payout_updates_stack():
         player_hands=[
             BlackjackHand(cards=["AS", "KD"], state="stood", doubled=False, bet=10.0)
         ],
-        dealer=["9S", "7D"],
+        dealer=["TS", "7D"],
         stack=100.0,
         bet=10.0,
         turn="dealer",

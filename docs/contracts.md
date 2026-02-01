@@ -302,3 +302,26 @@ If illegal:
   }
 }
 ```
+
+## RPG Dice
+
+### Tool: `roll_rpg_dice`
+
+**Input**
+
+* `sides` (required): 4, 6, 8, 10, 12, 20, 100
+* `count` (optional, default 1)
+
+**Output (structuredContent)**
+
+```json
+{
+  "type": "rpg_dice_roll",
+  "gameType": "rpg_dice",
+  "legal": true,
+  "sides": 20,
+  "count": 2,
+  "rolls": [13, 7],
+  "total": 20
+}
+```

@@ -6,6 +6,7 @@ URL = "http://127.0.0.1:10000/mcp"
 WIDGET_URI = "ui://widget/chess-board-v1.html"
 CHECKERS_WIDGET_URI = "ui://widget/checkers-board-v1.html"
 BLACKJACK_WIDGET_URI = "ui://widget/blackjack-board-v1.html"
+RPG_DICE_WIDGET_URI = "ui://widget/rpg-dice-v1.html"
 
 
 class McpHttpClient:
@@ -209,6 +210,23 @@ def run_blackjack(client: McpHttpClient) -> None:
     )
 
 
+def run_rpg_dice(client: McpHttpClient) -> None:
+    _, widget = client.request("resources/read", {"uri": RPG_DICE_WIDGET_URI})
+    widget_text = widget["result"]["contents"][0].get("text") or widget["result"][
+        "contents"
+    ][0].get("content")
+
+    _, roll_rpg_dice = client.request(
+        "tools/call",
+        {"name": "roll_rpg_dice", "arguments": {"sides": 20, "count": 2}},
+    )
+    roll_payload = roll_rpg_dice["result"]["structuredContent"]
+
+    print("\n=== RPG Dice ===")
+    print("widget_bytes:", len(widget_text) if widget_text else 0)
+    print("roll_rpg_dice:", roll_payload)
+
+
 def main() -> None:
     client = McpHttpClient(URL)
 
@@ -243,6 +261,7 @@ def main() -> None:
     run_chess(client)
     run_checkers(client)
     run_blackjack(client)
+    run_rpg_dice(client)
 
 
 if __name__ == "__main__":

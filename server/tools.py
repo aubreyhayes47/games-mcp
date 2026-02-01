@@ -19,6 +19,7 @@ try:
         parse_state as parse_blackjack_state,
         serialize_state as serialize_blackjack_state,
     )
+    from .rpg_dice_rules import roll_dice
     from .checkers_rules import (
         all_checkers_moves,
         apply_checkers_move as apply_checkers_move_rule,
@@ -36,6 +37,7 @@ except ImportError:  # pragma: no cover - fallback for script execution
         parse_state as parse_blackjack_state,
         serialize_state as serialize_blackjack_state,
     )
+    from rpg_dice_rules import roll_dice
     from checkers_rules import (
         all_checkers_moves,
         apply_checkers_move as apply_checkers_move_rule,
@@ -47,6 +49,7 @@ except ImportError:  # pragma: no cover - fallback for script execution
 CHESS_WIDGET_TEMPLATE_URI = "ui://widget/chess-board-v1.html"
 CHECKERS_WIDGET_TEMPLATE_URI = "ui://widget/checkers-board-v1.html"
 BLACKJACK_WIDGET_TEMPLATE_URI = "ui://widget/blackjack-board-v1.html"
+RPG_DICE_WIDGET_TEMPLATE_URI = "ui://widget/rpg-dice-v1.html"
 OPPONENT_MOVE_CAP = 200
 
 
@@ -445,3 +448,40 @@ def register_tools(app: FastMCP) -> None:
             },
         }
         return ToolResult(content=content, structured_content=payload)
+
+    @app.tool(
+        name="roll_rpg_dice",
+        description="Roll one or more RPG dice (d4, d6, d8, d10, d12, d20, d100).",
+        meta=_tool_meta(output_template_uri=RPG_DICE_WIDGET_TEMPLATE_URI),
+        annotations={
+            "readOnlyHint": False,
+            "openWorldHint": False,
+            "destructiveHint": False,
+        },
+    )
+    def roll_rpg_dice(sides: int, count: int = 1) -> ToolResult:
+        try:
+            result = roll_dice(sides=sides, count=count)
+        except ValueError as exc:
+            payload = {
+                "type": "rpg_dice_roll",
+                "gameType": "rpg_dice",
+                "legal": False,
+                "sides": sides,
+                "count": count,
+                "rolls": [],
+                "total": 0,
+                "error": str(exc),
+            }
+            return ToolResult(content=[], structured_content=payload)
+
+        payload = {
+            "type": "rpg_dice_roll",
+            "gameType": "rpg_dice",
+            "legal": True,
+            "sides": result.sides,
+            "count": result.count,
+            "rolls": result.rolls,
+            "total": sum(result.rolls),
+        }
+        return ToolResult(content=[], structured_content=payload)

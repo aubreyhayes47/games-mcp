@@ -17,6 +17,7 @@ state. You type moves in chat and watch the board or table update instantly.
 * Chess (LLM opponent constrained to legal moves)
 * Checkers (algebraic square notation)
 * Blackjack (LLM dealer constrained to legal actions, with betting)
+* RPG dice (d4, d6, d8, d10, d12, d20, d100)
 
 ## 🧭 Roadmap (planned additions)
 
@@ -26,7 +27,6 @@ state. You type moves in chat and watch the board or table update instantly.
 * Tic-Tac-Toe
 * Sea Battle
 * Roulette (American)
-* RPG dice (d4, d6, d8, d10, d12, d20, d100)
 
 ## ⚡ Quickstart (Local)
 

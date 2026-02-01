@@ -23,6 +23,7 @@ npm install
 npm run build
 npm run build:checkers
 npm run build:blackjack
+npm run build:rpg-dice
 ```
 
 The server reads `web/widgets/<game>/dist/widget.js` and
@@ -134,6 +135,14 @@ auto-renders widget output from `new_*` and `apply_*` tool responses.
 // choose_blackjack_dealer_action
 {
   "state": "S:<shoe>|P:AS,8D@stood@0@10|D:7C,2H|BK:1000|B:10|T:dealer|H:0|ST:in_progress|LA:stand|R:-"
+}
+```
+
+```json
+// roll_rpg_dice
+{
+  "sides": 20,
+  "count": 2
 }
 ```
 
