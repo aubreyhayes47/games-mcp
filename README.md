@@ -21,10 +21,10 @@ state. You type moves in chat and watch the board or table update instantly.
 * Sea Battle (Battleship-style, LLM opponent)
 * Slot machine (classic table with weighted symbols)
 * Four-in-a-Row (classic Connect 4)
+* Tic-Tac-Toe (X/O, A1–C3)
 
 ## 🧭 Roadmap (planned additions)
 
-* Tic-Tac-Toe
 
 ## ⚡ Quickstart (Local)
 

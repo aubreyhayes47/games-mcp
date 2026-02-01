@@ -27,6 +27,7 @@ npm run build:rpg-dice
 npm run build:sea-battle
 npm run build:slot
 npm run build:four-in-a-row
+npm run build:tic-tac-toe
 ```
 
 The server reads `web/widgets/<game>/dist/widget.js` and
@@ -217,6 +218,36 @@ auto-renders widget output from `new_*` and `apply_*` tool responses.
 // choose_four_in_a_row_opponent_move
 {
   "state": "G:......./......./......./......./......./...R...|T:opponent|ST:in_progress|LA:4|W:-"
+}
+```
+
+```json
+// new_tic_tac_toe_game
+{
+  "side": "X"
+}
+```
+
+```json
+// legal_tic_tac_toe_moves
+{
+  "state": "G:.../.../...|T:player|ST:in_progress|LA:-|W:-|P:X|O:O"
+}
+```
+
+```json
+// apply_tic_tac_toe_move
+{
+  "gameId": "g_example",
+  "state": "G:.../.../...|T:player|ST:in_progress|LA:-|W:-|P:X|O:O",
+  "coord": "B2"
+}
+```
+
+```json
+// choose_tic_tac_toe_opponent_move
+{
+  "state": "G:.../.X./...|T:opponent|ST:in_progress|LA:B2|W:-|P:X|O:O"
 }
 ```
 

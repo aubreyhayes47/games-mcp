@@ -38,6 +38,12 @@ try:
         legal_four_in_a_row_moves as legal_four_in_a_row_moves_rule,
         opponent_move_candidates as four_in_a_row_opponent_moves,
     )
+    from .tic_tac_toe_rules import (
+        apply_tic_tac_toe_move as apply_tic_tac_toe_move_rule,
+        initial_tic_tac_toe_state,
+        legal_tic_tac_toe_moves as legal_tic_tac_toe_moves_rule,
+        opponent_move_candidates as tic_tac_toe_opponent_moves,
+    )
     from .checkers_rules import (
         all_checkers_moves,
         apply_checkers_move as apply_checkers_move_rule,
@@ -74,6 +80,12 @@ except ImportError:  # pragma: no cover - fallback for script execution
         legal_four_in_a_row_moves as legal_four_in_a_row_moves_rule,
         opponent_move_candidates as four_in_a_row_opponent_moves,
     )
+    from tic_tac_toe_rules import (
+        apply_tic_tac_toe_move as apply_tic_tac_toe_move_rule,
+        initial_tic_tac_toe_state,
+        legal_tic_tac_toe_moves as legal_tic_tac_toe_moves_rule,
+        opponent_move_candidates as tic_tac_toe_opponent_moves,
+    )
     from checkers_rules import (
         all_checkers_moves,
         apply_checkers_move as apply_checkers_move_rule,
@@ -89,6 +101,7 @@ RPG_DICE_WIDGET_TEMPLATE_URI = "ui://widget/rpg-dice-v1.html"
 SEA_BATTLE_WIDGET_TEMPLATE_URI = "ui://widget/sea-battle-v1.html"
 SLOT_WIDGET_TEMPLATE_URI = "ui://widget/slot-v1.html"
 FOUR_IN_A_ROW_WIDGET_TEMPLATE_URI = "ui://widget/four-in-a-row-v1.html"
+TIC_TAC_TOE_WIDGET_TEMPLATE_URI = "ui://widget/tic-tac-toe-v1.html"
 OPPONENT_MOVE_CAP = 200
 
 
@@ -801,6 +814,126 @@ def register_tools(app: FastMCP) -> None:
         payload = {
             "type": "opponent_choice",
             "gameType": "four_in_a_row",
+            "moves": moves,
+            "policy": {
+                "mustChooseFromMoves": True,
+                "chooseExactlyOne": True,
+            },
+        }
+        return ToolResult(content=content, structured_content=payload)
+
+    @app.tool(
+        name="new_tic_tac_toe_game",
+        description="Start a new Tic-Tac-Toe game for chat-driven play.",
+        meta=_tool_meta(output_template_uri=TIC_TAC_TOE_WIDGET_TEMPLATE_URI),
+    )
+    def new_tic_tac_toe_game(side: Literal["X", "O"] | None = None) -> ToolResult:
+        game_id = f"g_{uuid.uuid4().hex}"
+        try:
+            state = initial_tic_tac_toe_state(player_symbol=side or "X")
+        except ValueError as exc:
+            payload = {
+                "type": "tic_tac_toe_snapshot",
+                "gameType": "tic_tac_toe",
+                "gameId": game_id,
+                "legal": False,
+                "state": "",
+                "error": str(exc),
+            }
+            return ToolResult(content=[], structured_content=payload)
+
+        payload = {
+            "type": "tic_tac_toe_snapshot",
+            "gameType": "tic_tac_toe",
+            "gameId": game_id,
+            "state": state,
+            "status": "in_progress",
+            "turn": "player",
+        }
+        return ToolResult(content=[], structured_content=payload)
+
+    @app.tool(
+        name="apply_tic_tac_toe_move",
+        description=(
+            "Validate and apply a Tic-Tac-Toe move to the provided state. Intended for "
+            "the model to call after the user types a coordinate in chat."
+        ),
+        meta=_tool_meta(output_template_uri=TIC_TAC_TOE_WIDGET_TEMPLATE_URI),
+        annotations={
+            "readOnlyHint": False,
+            "openWorldHint": False,
+            "destructiveHint": False,
+        },
+    )
+    def apply_tic_tac_toe_move(
+        gameId: str,
+        state: str,
+        coord: str,
+    ) -> ToolResult:  # noqa: N803
+        result = apply_tic_tac_toe_move_rule(state, coord)
+        if not result.legal:
+            payload = {
+                "type": "tic_tac_toe_snapshot",
+                "gameType": "tic_tac_toe",
+                "gameId": gameId,
+                "legal": False,
+                "state": result.state,
+                "error": result.error or "Illegal move.",
+            }
+            return ToolResult(content=[], structured_content=payload)
+
+        payload = {
+            "type": "tic_tac_toe_snapshot",
+            "gameType": "tic_tac_toe",
+            "gameId": gameId,
+            "legal": True,
+            "state": result.state,
+            "status": result.status,
+            "turn": result.turn,
+            "lastAction": result.last_action,
+        }
+        if result.winner:
+            payload["winner"] = result.winner
+        return ToolResult(content=[], structured_content=payload)
+
+    @app.tool(
+        name="legal_tic_tac_toe_moves",
+        description=(
+            "List legal Tic-Tac-Toe moves for a given state so the model can interpret "
+            "chat input."
+        ),
+        meta=_tool_meta(),
+        annotations={"readOnlyHint": True},
+    )
+    def legal_tic_tac_toe_moves(state: str) -> ToolResult:
+        payload = {
+            "type": "legal_moves",
+            "gameType": "tic_tac_toe",
+            "moves": legal_tic_tac_toe_moves_rule(state),
+        }
+        return ToolResult(content=[], structured_content=payload)
+
+    @app.tool(
+        name="choose_tic_tac_toe_opponent_move",
+        description=(
+            "Return legal moves and opponent selection policy for the model-driven "
+            "Tic-Tac-Toe opponent turn loop."
+        ),
+        meta=_tool_meta(),
+    )
+    def choose_tic_tac_toe_opponent_move(state: str) -> ToolResult:
+        moves = tic_tac_toe_opponent_moves(state, limit=OPPONENT_MOVE_CAP)
+        content = []
+        if not moves:
+            content = [
+                {
+                    "type": "text",
+                    "text": "No legal moves available; the game is over.",
+                }
+            ]
+        payload = {
+            "type": "opponent_choice",
+            "gameType": "tic_tac_toe",
             "moves": moves,
             "policy": {
                 "mustChooseFromMoves": True,

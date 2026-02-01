@@ -1,8 +1,8 @@
 # games-mcp widgets
 
 This directory contains the React + Vite widgets for the games MCP library.
-Chess, checkers, blackjack, RPG dice, Sea Battle, the slot machine, and
-Four-in-a-Row are implemented today; planned additions include Tic-Tac-Toe.
+Chess, checkers, blackjack, RPG dice, Sea Battle, the slot machine, Four-in-a-Row,
+and Tic-Tac-Toe are implemented today.
 
 ## Local development
 
@@ -48,6 +48,12 @@ To run the Four-in-a-Row widget locally:
 npm run dev:four-in-a-row
 ```
 
+To run the Tic-Tac-Toe widget locally:
+
+```bash
+npm run dev:tic-tac-toe
+```
+
 ## Build
 
 ```bash
@@ -90,6 +96,12 @@ To build the Four-in-a-Row widget bundle:
 npm run build:four-in-a-row
 ```
 
+To build the Tic-Tac-Toe widget bundle:
+
+```bash
+npm run build:tic-tac-toe
+```
+
 ## Notes
 
 - The chess widget lives at `web/widgets/chess/`.
@@ -99,5 +111,6 @@ npm run build:four-in-a-row
 - The Sea Battle widget lives at `web/widgets/sea-battle/`.
 - The slot widget lives at `web/widgets/slot/`.
 - The Four-in-a-Row widget lives at `web/widgets/four-in-a-row/`.
+- The Tic-Tac-Toe widget lives at `web/widgets/tic-tac-toe/`.
 - The widget reads from `window.openai.toolOutput`.
 - The build output is embedded into the server template.

@@ -1,0 +1,124 @@
+:root {
+  font-family: "Inter", system-ui, sans-serif;
+  color: #1f2933;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: linear-gradient(135deg, #f5f6ff, #d7dff5 60%, #b7c3ef);
+}
+
+.app {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.app__header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.app__subtitle {
+  margin: 4px 0 0;
+  color: #3c4b77;
+}
+
+.status {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 8px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 12px;
+  border: 1px solid rgba(60, 75, 119, 0.25);
+  box-shadow: 0 10px 20px rgba(23, 33, 64, 0.12);
+}
+
+.board-area {
+  display: grid;
+}
+
+.board-wrapper {
+  background: rgba(26, 36, 73, 0.95);
+  border-radius: 18px;
+  padding: 16px;
+  box-shadow: 0 18px 30px rgba(15, 25, 55, 0.2);
+  display: grid;
+  gap: 8px;
+}
+
+.column-labels,
+.row-labels {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  color: #f7f8ff;
+  font-weight: 600;
+  text-align: center;
+}
+
+.row-labels {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.board--waiting {
+  min-height: 220px;
+  place-items: center;
+  color: #f8fafc;
+  font-size: 18px;
+}
+
+.cell {
+  width: 100%;
+  padding-top: 100%;
+  border-radius: 16px;
+  background: #e1e7f7;
+  position: relative;
+  display: grid;
+  place-items: center;
+  font-size: 36px;
+  font-weight: 700;
+  color: #1f2933;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.cell span {
+  position: absolute;
+}
+
+.cell--x {
+  background: radial-gradient(circle at 30% 30%, #f2f7ff, #8ca2e6 60%, #4b5fa6);
+  color: #0f1b3d;
+}
+
+.cell--o {
+  background: radial-gradient(circle at 30% 30%, #fff7db, #f4c060 60%, #b97b0f);
+  color: #3b2500;
+}
+
+.board-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+  color: #1f2c4d;
+}
+
+.board-note {
+  margin: 0;
+}

@@ -561,6 +561,111 @@ If illegal:
 }
 ```
 
+## Tic-Tac-Toe
+
+### Tic-Tac-Toe state format
+
+```
+G:<grid>|T:<turn>|ST:<status>|LA:<last_action>|W:<winner>|P:<player_symbol>|O:<opponent_symbol>
+```
+
+Grid is 3 rows of 3 chars using:
+
+- `.` empty
+- `X` player
+- `O` opponent
+
+### Tool: `new_tic_tac_toe_game`
+
+**Input**
+
+* `side` (optional): `"X" | "O"`
+
+**Output (structuredContent)**
+
+```json
+{
+  "type": "tic_tac_toe_snapshot",
+  "gameType": "tic_tac_toe",
+  "gameId": "g_123",
+  "state": "<STATE>",
+  "status": "in_progress",
+  "turn": "player"
+}
+```
+
+### Tool: `apply_tic_tac_toe_move`
+
+**Input**
+
+* `gameId`
+* `state`
+* `coord` (string): `A1` through `C3`
+
+**Output (structuredContent)**
+
+```json
+{
+  "type": "tic_tac_toe_snapshot",
+  "gameType": "tic_tac_toe",
+  "gameId": "g_123",
+  "legal": true,
+  "state": "<NEW_STATE>",
+  "status": "in_progress",
+  "turn": "opponent",
+  "lastAction": "B2"
+}
+```
+
+If illegal:
+
+```json
+{
+  "type": "tic_tac_toe_snapshot",
+  "gameType": "tic_tac_toe",
+  "gameId": "g_123",
+  "legal": false,
+  "state": "<UNCHANGED_STATE>",
+  "error": "Illegal move."
+}
+```
+
+### Tool: `legal_tic_tac_toe_moves` (read-only)
+
+**Input**
+
+* `state`
+
+**Output (structuredContent)**
+
+```json
+{
+  "type": "legal_moves",
+  "gameType": "tic_tac_toe",
+  "moves": ["A1", "B2", "C3"]
+}
+```
+
+### Tool: `choose_tic_tac_toe_opponent_move`
+
+**Input**
+
+* `state`
+
+**Output (structuredContent)**
+
+```json
+{
+  "type": "opponent_choice",
+  "gameType": "tic_tac_toe",
+  "moves": ["A1", "B2", "C3"],
+  "policy": {
+    "mustChooseFromMoves": true,
+    "chooseExactlyOne": true
+  }
+}
+```
+
 ## RPG Dice
 
 ### Tool: `roll_rpg_dice`
