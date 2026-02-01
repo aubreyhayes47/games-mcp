@@ -15,7 +15,6 @@ Implemented today:
 Planned next:
 
 * Heads-up NL Hold'em (LLM opponent)
-* Blackjack (LLM dealer)
 * Slot machine
 
 ## Design principles
@@ -479,9 +478,9 @@ With the server running locally, run:
 ./.venv/bin/python scripts/mcp_smoke_test.py
 ```
 
-This exercises both chess and checkers tool flows over HTTP.
+This exercises chess, checkers, and blackjack tool flows over HTTP.
 
-## Testing (current: chess + checkers)
+## Testing (current: chess + checkers + blackjack)
 
 At minimum, tests should cover:
 
@@ -494,11 +493,17 @@ At minimum, tests should cover:
 * forced captures
 * multi-jump captures
 * kinging
+* legal blackjack actions (hit/stand/double/split)
+* split hand sequencing and handIndex updates
+* double action transitions
+* dealer action policy (stands on soft 17)
+* blackjack game over results
 
 Manual test checklist:
 
 * Build the widget: `cd web && npm install && npm run build`
 * Build checkers: `cd web && npm run build:checkers`
+* Build blackjack: `cd web && npm run build:blackjack`
 * Start a new game via chat (model calls `new_chess_game`).
 * Type a legal move and confirm `render_chess_game` updates the board.
 * Type an illegal move and confirm the error with no board change.
@@ -509,3 +514,8 @@ Manual test checklist:
 * Type an illegal move and confirm the error with no board change.
 * Confirm the opponent loop runs after a legal checkers move.
 * Confirm forced captures are enforced.
+* Start a blackjack game via chat (model calls `new_blackjack_game`).
+* Type `hit`, `stand`, `double`, and `split` as legal and confirm `render_blackjack_game` updates the table.
+* Type an illegal action and confirm the error with no table change.
+* Confirm the dealer loop runs after player actions and respects the tool action list.
+* Reach game over and confirm results render per hand.

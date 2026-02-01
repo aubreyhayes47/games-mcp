@@ -8,23 +8,25 @@ Stack preference: **Python (FastMCP)** for the MCP server, React widget for UI.
 ## 0) One-paragraph goal
 
 Build a minimal ChatGPT Apps SDK **games library** that exposes authoritative game tools and a
-display-only widget UI. Chess and checkers are implemented today; planned additions include
-heads-up NL Hold'em (LLM opponent), blackjack (LLM dealer), and a slot machine.
+display-only widget UI. Chess, checkers, and blackjack are implemented today; planned additions
+include heads-up NL Hold'em (LLM opponent) and a slot machine.
 
-## 1) Definition of Done (current implementations: chess + checkers)
+## 1) Definition of Done (current implementations: chess + checkers + blackjack)
 
 A change is “done” when all of the following are true:
 
-1. **Widget renders a board** from `window.openai.toolOutput` inside the ChatGPT iframe.
+1. **Widget renders a board/table** from `window.openai.toolOutput` inside the ChatGPT iframe.
 2. User **types moves in chat** (no board interaction).
-3. The model calls `apply_chess_move` or `apply_checkers_move` based on chat input.
-4. The model renders the updated snapshot via `render_chess_game` or `render_checkers_game`.
+3. The model calls `apply_chess_move`, `apply_checkers_move`, or `apply_blackjack_action` based on chat input.
+4. The model renders the updated snapshot via `render_chess_game`, `render_checkers_game`, or `render_blackjack_game`.
    * If `legal: false`, the model reports the error and does not change the board.
-5. After a legal player move, the model runs the **opponent turn loop**:
-   * call `choose_chess_opponent_move(fen)` or `choose_checkers_opponent_move(state)`
-   * model selects exactly one move from the list
-   * apply it via `apply_chess_move` or `apply_checkers_move`
-   * render the result via `render_chess_game` or `render_checkers_game`
+5. After a legal player move, the model runs the **opponent/dealer turn loop**:
+   * Chess/Checkers: call `choose_chess_opponent_move(fen)` or `choose_checkers_opponent_move(state)`
+     and select exactly one move from the list, apply it via the matching apply tool,
+     then render the result via the matching render tool.
+   * Blackjack: call `choose_blackjack_dealer_action(state)` and select exactly one
+     action from the list, apply it via `apply_blackjack_action`, then render via
+     `render_blackjack_game`.
 6. Game over states are rendered correctly.
 7. Works locally and in production behind HTTPS (e.g., Render).
 
@@ -39,8 +41,8 @@ These are hard rules. If your implementation violates them, it is wrong.
 
 ### 2.2 LLM opponent constraints
 
-* The LLM opponent **must choose from** a tool-provided list of legal moves.
-* The server must **re-validate** the chosen move via the game-specific apply tool before committing.
+* The LLM opponent/dealer **must choose from** a tool-provided list of legal moves/actions.
+* The server must **re-validate** the chosen move/action via the game-specific apply tool before committing.
 
 ### 2.3 No game logic in prose
 
@@ -52,7 +54,7 @@ These are hard rules. If your implementation violates them, it is wrong.
 * `structuredContent` is **small** and stable.
 * Put bulky or UI-only information in `_meta` (or omit for v1).
 
-## 3) Current tool contracts (chess + checkers)
+## 3) Current tool contracts (chess + checkers + blackjack)
 
 The chess tool contracts are the reference for future games. Checkers follows the same
 constraints and payload discipline with a different state format.
@@ -268,6 +270,130 @@ Rows use `w`/`W` for white man/king, `b`/`B` for black man/king, and `.` for emp
 }
 ```
 
+## Blackjack tool contracts
+
+### Blackjack state format
+
+```
+S:<shoe>|P:<hand1;hand2>|D:<dealer>|T:<turn>|H:<hand_index>|ST:<status>|LA:<last_action>|R:<results>
+```
+
+Hands are encoded as `cards@state@doubled`, for example:
+
+```
+P:AS,8D@active@0;7C,7H@active@0
+```
+
+### Tool: `render_blackjack_game`
+
+**Input**
+
+* `snapshot`: object (must include `state` and `gameId`, plus optional status fields)
+
+**Output (structuredContent)**
+
+```json
+{
+  "type": "blackjack_snapshot",
+  "gameType": "blackjack",
+  "gameId": "g_123",
+  "state": "<STATE>",
+  "status": "in_progress",
+  "turn": "player"
+}
+```
+
+### Tool: `new_blackjack_game`
+
+**Output (structuredContent)**
+
+```json
+{
+  "type": "blackjack_snapshot",
+  "gameType": "blackjack",
+  "gameId": "g_123",
+  "state": "<STATE>",
+  "status": "in_progress",
+  "turn": "player",
+  "lastAction": "deal"
+}
+```
+
+### Tool: `apply_blackjack_action`
+
+**Input**
+
+* `gameId`
+* `state`
+* `action` (string): `hit`, `stand`, `double`, `split`
+
+**Output (structuredContent)**
+
+```json
+{
+  "type": "blackjack_snapshot",
+  "gameType": "blackjack",
+  "gameId": "g_123",
+  "legal": true,
+  "state": "<NEW_STATE>",
+  "status": "in_progress",
+  "turn": "dealer",
+  "lastAction": "hit",
+  "handIndex": 0
+}
+```
+
+If illegal:
+
+```json
+{
+  "type": "blackjack_snapshot",
+  "gameType": "blackjack",
+  "gameId": "g_123",
+  "legal": false,
+  "state": "<UNCHANGED_STATE>",
+  "error": "Illegal action."
+}
+```
+
+### Tool: `legal_blackjack_actions` (read-only)
+
+**Input**
+
+* `state`
+
+**Output (structuredContent)**
+
+```json
+{
+  "type": "legal_actions",
+  "gameType": "blackjack",
+  "actions": ["hit", "stand", "double"],
+  "turn": "player",
+  "handIndex": 0
+}
+```
+
+### Tool: `choose_blackjack_dealer_action`
+
+**Input**
+
+* `state`
+
+**Output (structuredContent)**
+
+```json
+{
+  "type": "opponent_choice",
+  "gameType": "blackjack",
+  "actions": ["hit", "stand"],
+  "policy": {
+    "mustChooseFromActions": true,
+    "chooseExactlyOne": true
+  }
+}
+```
+
 ## 4) Repo layout (current)
 
 ```
@@ -276,10 +402,12 @@ games-mcp/
     app.py                 # MCP server (FastMCP/FastAPI)
     chess_rules.py         # move parsing + legality + FEN transitions
     checkers_rules.py      # move parsing + legality + state transitions
+    blackjack_rules.py     # action parsing + legality + state transitions
     storage.py             # optional: gameId -> state/history persistence
     templates/
       chess-board-v1.html  # text/html+skybridge wrapper
       checkers-board-v1.html
+      blackjack-board-v1.html
   web/
     widgets/
       chess/
@@ -291,6 +419,14 @@ games-mcp/
           widget.js        # bundled JS (inlined into template)
           widget.css       # bundled CSS (inlined into template)
       checkers/
+        src/
+          App.jsx
+          hooks/
+            useOpenAiGlobal.js
+        dist/
+          widget.js
+          widget.css
+      blackjack/
         src/
           App.jsx
           hooks/
