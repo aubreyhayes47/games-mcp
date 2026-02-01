@@ -23,8 +23,6 @@ state. You type moves in chat and watch the board or table update instantly.
 * Four-in-a-Row (classic Connect 4)
 * Tic-Tac-Toe (X/O, A1–C3)
 
-## 🧭 Roadmap (planned additions)
-
 
 ## ⚡ Quickstart (Local)
 
