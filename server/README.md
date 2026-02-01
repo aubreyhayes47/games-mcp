@@ -46,25 +46,12 @@ export WIDGET_ALLOW_LOCALHOST=true
 
 Use MCP Inspector (or any MCP client) to call the tools with these sample inputs.
 In production, the model calls these tools in response to user chat input and
-uses `render_chess_game` or `render_checkers_game` as the only widget-rendering tools.
+auto-renders widget output from `new_*` and `apply_*` tool responses.
 
 ```json
 // new_chess_game
 {
   "side": "white"
-}
-```
-
-```json
-// render_chess_game
-{
-  "snapshot": {
-    "type": "chess_snapshot",
-    "gameId": "g_example",
-    "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
-    "status": "in_progress",
-    "turn": "w"
-  }
 }
 ```
 
@@ -97,19 +84,6 @@ uses `render_chess_game` or `render_checkers_game` as the only widget-rendering 
 ```
 
 ```json
-// render_checkers_game
-{
-  "snapshot": {
-    "type": "checkers_snapshot",
-    "gameId": "g_example",
-    "state": ".b.b.b.b/b.b.b.b./.b.b.b.b/......../......../w.w.w.w./.w.w.w.w/w.w.w.w. w",
-    "status": "in_progress",
-    "turn": "w"
-  }
-}
-```
-
-```json
 // legal_checkers_moves
 {
   "state": ".b.b.b.b/b.b.b.b./.b.b.b.b/......../......../w.w.w.w./.w.w.w.w/w.w.w.w. w"
@@ -135,19 +109,6 @@ uses `render_chess_game` or `render_checkers_game` as the only widget-rendering 
 ```json
 // new_blackjack_game
 {}
-```
-
-```json
-// render_blackjack_game
-{
-  "snapshot": {
-    "type": "blackjack_snapshot",
-    "gameId": "g_example",
-    "state": "S:<shoe>|P:AS,8D@active@0|D:7C,2H|T:player|H:0|ST:in_progress|LA:deal|R:-",
-    "status": "in_progress",
-    "turn": "player"
-  }
-}
 ```
 
 ```json
@@ -210,13 +171,13 @@ orchestrator should call `choose_chess_opponent_move` again to request a valid m
 - Call `apply_chess_move` with a legal move (e.g., `e2e4` from the starting position).
 - Call `apply_chess_move` with an illegal move (e.g., `e2e5` from the starting position).
 - Call `choose_chess_opponent_move` with the current `fen` and confirm it returns moves + policy.
-- Call `render_chess_game` with the latest snapshot to render the widget output.
+- Confirm the widget auto-renders from `new_chess_game` and `apply_chess_move` outputs.
 - Call `new_checkers_game` and keep the returned `state`.
 - Call `legal_checkers_moves` to confirm the legal/forced capture list.
 - Call `apply_checkers_move` with a legal move (e.g., `b6a5` from the starting position).
 - Call `apply_checkers_move` with an illegal move to confirm `legal: false`.
 - Call `choose_checkers_opponent_move` with the current `state` and confirm it returns moves + policy.
-- Call `render_checkers_game` with the latest snapshot to render the widget output.
+- Confirm the widget auto-renders from `new_checkers_game` and `apply_checkers_move` outputs.
 
 ## Notes
 

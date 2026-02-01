@@ -91,11 +91,6 @@ def run_chess(client: McpHttpClient) -> None:
             "arguments": {"fen": apply_snapshot["fen"]},
         },
     )
-    _, rendered = client.request(
-        "tools/call",
-        {"name": "render_chess_game", "arguments": {"snapshot": apply_snapshot}},
-    )
-
     print("\n=== Chess ===")
     print("widget_bytes:", len(widget_text) if widget_text else 0)
     print("new_chess_game:", snapshot)
@@ -108,7 +103,6 @@ def run_chess(client: McpHttpClient) -> None:
         "choose_chess_opponent_move_count:",
         len(choose_chess_opponent_move["result"]["structuredContent"]["movesUci"]),
     )
-    print("render_chess_game:", rendered["result"]["structuredContent"])
 
 
 def run_checkers(client: McpHttpClient) -> None:
@@ -147,11 +141,6 @@ def run_checkers(client: McpHttpClient) -> None:
             "arguments": {"state": apply_snapshot["state"]},
         },
     )
-    _, rendered = client.request(
-        "tools/call",
-        {"name": "render_checkers_game", "arguments": {"snapshot": apply_snapshot}},
-    )
-
     print("\n=== Checkers ===")
     print("widget_bytes:", len(widget_text) if widget_text else 0)
     print("new_checkers_game:", snapshot)
@@ -172,7 +161,6 @@ def run_checkers(client: McpHttpClient) -> None:
         "choose_checkers_opponent_move_count:",
         len(choose_checkers_opponent_move["result"]["structuredContent"]["moves"]),
     )
-    print("render_checkers_game:", rendered["result"]["structuredContent"])
 
 
 def run_blackjack(client: McpHttpClient) -> None:
@@ -210,14 +198,6 @@ def run_blackjack(client: McpHttpClient) -> None:
             "arguments": {"state": apply_snapshot["state"]},
         },
     )
-    _, rendered = client.request(
-        "tools/call",
-        {
-            "name": "render_blackjack_game",
-            "arguments": {"snapshot": apply_snapshot},
-        },
-    )
-
     print("\n=== Blackjack ===")
     print("widget_bytes:", len(widget_text) if widget_text else 0)
     print("new_blackjack_game:", snapshot)
@@ -227,7 +207,6 @@ def run_blackjack(client: McpHttpClient) -> None:
         "choose_blackjack_dealer_action:",
         choose_blackjack_dealer_action["result"]["structuredContent"],
     )
-    print("render_blackjack_game:", rendered["result"]["structuredContent"])
 
 
 def main() -> None:

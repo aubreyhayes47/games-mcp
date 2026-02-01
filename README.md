@@ -22,7 +22,7 @@ Planned next:
 * **Authoritative state:** all game transitions come from tools; no optimistic UI.
 * **Idempotent tools:** `(state, move) -> new_state` for safe retries.
 * **Small structuredContent:** only what the model needs; UI-only data in `_meta`.
-* **Single render tool per game:** only `render_chess_game` and `render_checkers_game` return widgets.
+* **Automatic render on tool output:** game-start and apply tools return widget output directly.
 
 ## Architecture
 
@@ -44,25 +44,6 @@ Planned next:
 
 The chess implementation is the canonical reference for tool behavior and payload
 shape. Checkers follows the same principles with a different state format.
-
-### Tool: `render_chess_game`
-
-**Input**
-
-* `snapshot`: object (must include `fen` and `gameId`, plus optional status fields)
-
-**Output (structuredContent)**
-
-```json
-{
-  "type": "chess_snapshot",
-  "gameType": "chess",
-  "gameId": "g_123",
-  "fen": "<FEN>",
-  "status": "in_progress",
-  "turn": "w"
-}
-```
 
 ### Tool: `new_chess_game`
 
@@ -162,25 +143,6 @@ Checkers uses an 8x8 board string plus the side to move:
 ```
 
 Rows use `w`/`W` for white man/king, `b`/`B` for black man/king, and `.` for empty.
-
-### Tool: `render_checkers_game`
-
-**Input**
-
-* `snapshot`: object (must include `state` and `gameId`, plus optional status fields)
-
-**Output (structuredContent)**
-
-```json
-{
-  "type": "checkers_snapshot",
-  "gameType": "checkers",
-  "gameId": "g_123",
-  "state": "<STATE>",
-  "status": "in_progress",
-  "turn": "w"
-}
-```
 
 ### Tool: `new_checkers_game`
 
@@ -287,25 +249,6 @@ P:AS,8D@active@0;7C,7H@active@0
 
 `R` is optional and contains per-hand results when the game is over (`win`,
 `lose`, `push`, `bust`, `blackjack`).
-
-### Tool: `render_blackjack_game`
-
-**Input**
-
-* `snapshot`: object (must include `state` and `gameId`, plus optional status fields)
-
-**Output (structuredContent)**
-
-```json
-{
-  "type": "blackjack_snapshot",
-  "gameType": "blackjack",
-  "gameId": "g_123",
-  "state": "<STATE>",
-  "status": "in_progress",
-  "turn": "player"
-}
-```
 
 ### Tool: `new_blackjack_game`
 
@@ -505,17 +448,17 @@ Manual test checklist:
 * Build checkers: `cd web && npm run build:checkers`
 * Build blackjack: `cd web && npm run build:blackjack`
 * Start a new game via chat (model calls `new_chess_game`).
-* Type a legal move and confirm `render_chess_game` updates the board.
+* Type a legal move and confirm the board updates from tool output.
 * Type an illegal move and confirm the error with no board change.
 * Confirm the opponent loop runs after a legal move.
 * Reach checkmate/stalemate and confirm status renders.
 * Start a checkers game via chat (model calls `new_checkers_game`).
-* Type a legal move and confirm `render_checkers_game` updates the board.
+* Type a legal move and confirm the board updates from tool output.
 * Type an illegal move and confirm the error with no board change.
 * Confirm the opponent loop runs after a legal checkers move.
 * Confirm forced captures are enforced.
 * Start a blackjack game via chat (model calls `new_blackjack_game`).
-* Type `hit`, `stand`, `double`, and `split` as legal and confirm `render_blackjack_game` updates the table.
+* Type `hit`, `stand`, `double`, and `split` as legal and confirm the table updates from tool output.
 * Type an illegal action and confirm the error with no table change.
 * Confirm the dealer loop runs after player actions and respects the tool action list.
 * Reach game over and confirm results render per hand.

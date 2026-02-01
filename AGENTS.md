@@ -18,15 +18,15 @@ A change is “done” when all of the following are true:
 1. **Widget renders a board/table** from `window.openai.toolOutput` inside the ChatGPT iframe.
 2. User **types moves in chat** (no board interaction).
 3. The model calls `apply_chess_move`, `apply_checkers_move`, or `apply_blackjack_action` based on chat input.
-4. The model renders the updated snapshot via `render_chess_game`, `render_checkers_game`, or `render_blackjack_game`.
+4. The model receives widget output directly from `new_*` and `apply_*` tool responses (auto-render).
    * If `legal: false`, the model reports the error and does not change the board.
 5. After a legal player move, the model runs the **opponent/dealer turn loop**:
    * Chess/Checkers: call `choose_chess_opponent_move(fen)` or `choose_checkers_opponent_move(state)`
      and select exactly one move from the list, apply it via the matching apply tool,
-     then render the result via the matching render tool.
+     then the updated snapshot auto-renders from the apply tool response.
    * Blackjack: call `choose_blackjack_dealer_action(state)` and select exactly one
-     action from the list, apply it via `apply_blackjack_action`, then render via
-     `render_blackjack_game`.
+     action from the list, apply it via `apply_blackjack_action`, then auto-render
+     from the tool response.
 6. Game over states are rendered correctly.
 7. Works locally and in production behind HTTPS (e.g., Render).
 
@@ -58,25 +58,6 @@ These are hard rules. If your implementation violates them, it is wrong.
 
 The chess tool contracts are the reference for future games. Checkers follows the same
 constraints and payload discipline with a different state format.
-
-### Tool: `render_chess_game`
-
-**Input**
-
-* `snapshot`: object (must include `fen` and `gameId`, plus optional status fields)
-
-**Output (structuredContent)**
-
-```json
-{
-  "type": "chess_snapshot",
-  "gameType": "chess",
-  "gameId": "g_123",
-  "fen": "<FEN>",
-  "status": "in_progress",
-  "turn": "w"
-}
-```
 
 ### Tool: `new_chess_game`
 
@@ -175,25 +156,6 @@ If illegal:
 
 Rows use `w`/`W` for white man/king, `b`/`B` for black man/king, and `.` for empty.
 
-### Tool: `render_checkers_game`
-
-**Input**
-
-* `snapshot`: object (must include `state` and `gameId`, plus optional status fields)
-
-**Output (structuredContent)**
-
-```json
-{
-  "type": "checkers_snapshot",
-  "gameType": "checkers",
-  "gameId": "g_123",
-  "state": "<STATE>",
-  "status": "in_progress",
-  "turn": "w"
-}
-```
-
 ### Tool: `new_checkers_game`
 
 **Output (structuredContent)**
@@ -282,25 +244,6 @@ Hands are encoded as `cards@state@doubled`, for example:
 
 ```
 P:AS,8D@active@0;7C,7H@active@0
-```
-
-### Tool: `render_blackjack_game`
-
-**Input**
-
-* `snapshot`: object (must include `state` and `gameId`, plus optional status fields)
-
-**Output (structuredContent)**
-
-```json
-{
-  "type": "blackjack_snapshot",
-  "gameType": "blackjack",
-  "gameId": "g_123",
-  "state": "<STATE>",
-  "status": "in_progress",
-  "turn": "player"
-}
 ```
 
 ### Tool: `new_blackjack_game`

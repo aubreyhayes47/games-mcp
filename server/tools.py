@@ -67,32 +67,9 @@ def register_tools(app: FastMCP) -> None:
     """Register MCP tools on the provided FastMCP app instance."""
 
     @app.tool(
-        name="render_chess_game",
-        description="Render the chess widget for the provided snapshot.",
-        meta=_tool_meta(output_template_uri=CHESS_WIDGET_TEMPLATE_URI),
-    )
-    def render_chess_game(snapshot: dict) -> ToolResult:
-        if not isinstance(snapshot, dict):
-            payload = {
-                "type": "chess_snapshot",
-                "gameType": "chess",
-                "gameId": "unknown",
-                "fen": "",
-                "status": "in_progress",
-                "turn": "w",
-                "legal": False,
-                "error": "Invalid snapshot payload.",
-            }
-            return ToolResult(content=[], structured_content=payload)
-        snapshot_payload = {**snapshot}
-        snapshot_payload.setdefault("type", "chess_snapshot")
-        snapshot_payload.setdefault("gameType", "chess")
-        return ToolResult(content=[], structured_content=snapshot_payload)
-
-    @app.tool(
         name="new_chess_game",
         description="Start a new chess game for chat-driven play.",
-        meta=_tool_meta(),
+        meta=_tool_meta(output_template_uri=CHESS_WIDGET_TEMPLATE_URI),
     )
     def new_chess_game(side: Literal["white", "black"] | None = None) -> ToolResult:
         board = chess.Board()
@@ -115,7 +92,7 @@ def register_tools(app: FastMCP) -> None:
             "Validate and apply a UCI move to the provided FEN. Intended for the "
             "model to call after the user types a move in chat."
         ),
-        meta=_tool_meta(),
+        meta=_tool_meta(output_template_uri=CHESS_WIDGET_TEMPLATE_URI),
         annotations={
             "readOnlyHint": False,
             "openWorldHint": False,
@@ -192,32 +169,9 @@ def register_tools(app: FastMCP) -> None:
         return ToolResult(content=content, structured_content=payload)
 
     @app.tool(
-        name="render_checkers_game",
-        description="Render the checkers widget for the provided snapshot.",
-        meta=_tool_meta(output_template_uri=CHECKERS_WIDGET_TEMPLATE_URI),
-    )
-    def render_checkers_game(snapshot: dict) -> ToolResult:
-        if not isinstance(snapshot, dict):
-            payload = {
-                "type": "checkers_snapshot",
-                "gameType": "checkers",
-                "gameId": "unknown",
-                "state": "",
-                "status": "in_progress",
-                "turn": "w",
-                "legal": False,
-                "error": "Invalid snapshot payload.",
-            }
-            return ToolResult(content=[], structured_content=payload)
-        snapshot_payload = {**snapshot}
-        snapshot_payload.setdefault("type", "checkers_snapshot")
-        snapshot_payload.setdefault("gameType", "checkers")
-        return ToolResult(content=[], structured_content=snapshot_payload)
-
-    @app.tool(
         name="new_checkers_game",
         description="Start a new checkers game for chat-driven play.",
-        meta=_tool_meta(),
+        meta=_tool_meta(output_template_uri=CHECKERS_WIDGET_TEMPLATE_URI),
     )
     def new_checkers_game() -> ToolResult:
         game_id = f"g_{uuid.uuid4().hex}"
@@ -237,7 +191,7 @@ def register_tools(app: FastMCP) -> None:
             "Validate and apply a checkers move to the provided state. Intended for the "
             "model to call after the user types a move in chat."
         ),
-        meta=_tool_meta(),
+        meta=_tool_meta(output_template_uri=CHECKERS_WIDGET_TEMPLATE_URI),
         annotations={
             "readOnlyHint": False,
             "openWorldHint": False,
@@ -325,32 +279,9 @@ def register_tools(app: FastMCP) -> None:
         return ToolResult(content=content, structured_content=payload)
 
     @app.tool(
-        name="render_blackjack_game",
-        description="Render the blackjack widget for the provided snapshot.",
-        meta=_tool_meta(output_template_uri=BLACKJACK_WIDGET_TEMPLATE_URI),
-    )
-    def render_blackjack_game(snapshot: dict) -> ToolResult:
-        if not isinstance(snapshot, dict):
-            payload = {
-                "type": "blackjack_snapshot",
-                "gameType": "blackjack",
-                "gameId": "unknown",
-                "state": "",
-                "status": "in_progress",
-                "turn": "player",
-                "legal": False,
-                "error": "Invalid snapshot payload.",
-            }
-            return ToolResult(content=[], structured_content=payload)
-        snapshot_payload = {**snapshot}
-        snapshot_payload.setdefault("type", "blackjack_snapshot")
-        snapshot_payload.setdefault("gameType", "blackjack")
-        return ToolResult(content=[], structured_content=snapshot_payload)
-
-    @app.tool(
         name="new_blackjack_game",
         description="Start a new blackjack game for chat-driven play.",
-        meta=_tool_meta(),
+        meta=_tool_meta(output_template_uri=BLACKJACK_WIDGET_TEMPLATE_URI),
     )
     def new_blackjack_game() -> ToolResult:
         game_id = f"g_{uuid.uuid4().hex}"
@@ -374,7 +305,7 @@ def register_tools(app: FastMCP) -> None:
             "Validate and apply a blackjack action to the provided state. Intended for "
             "the model to call after the user types an action in chat."
         ),
-        meta=_tool_meta(),
+        meta=_tool_meta(output_template_uri=BLACKJACK_WIDGET_TEMPLATE_URI),
         annotations={
             "readOnlyHint": False,
             "openWorldHint": False,
