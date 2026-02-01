@@ -58,11 +58,31 @@ const parseState = (state) => {
   };
 };
 
-const cellClass = (value, showShips) => {
+const cellClass = (value, showShips, neighbors) => {
   if (value === "H") return "cell cell--hit";
   if (value === "M") return "cell cell--miss";
-  if (value === "S" && showShips) return "cell cell--ship";
+  if (value === "S" && showShips) {
+    const { up, down, left, right } = neighbors || {};
+    const shipNeighbors = [up, down, left, right].filter(Boolean).length;
+    const classes = ["cell", "cell--ship"];
+    if (shipNeighbors <= 1) {
+      classes.push("cell--ship-end");
+      if (up) classes.push("cell--ship-cap-top");
+      if (down) classes.push("cell--ship-cap-bottom");
+      if (left) classes.push("cell--ship-cap-left");
+      if (right) classes.push("cell--ship-cap-right");
+    }
+    return classes.join(" ");
+  }
   return "cell";
+};
+
+const getShipNeighbors = (board, rowIndex, colIndex) => {
+  const up = rowIndex > 0 && board[rowIndex - 1][colIndex] === "S";
+  const down = rowIndex < 9 && board[rowIndex + 1][colIndex] === "S";
+  const left = colIndex > 0 && board[rowIndex][colIndex - 1] === "S";
+  const right = colIndex < 9 && board[rowIndex][colIndex + 1] === "S";
+  return { up, down, left, right };
 };
 
 export default function App() {
@@ -138,7 +158,11 @@ export default function App() {
                   row.map((cell, colIndex) => (
                     <div
                       key={`p-${rowIndex}-${colIndex}`}
-                      className={cellClass(cell, true)}
+                      className={cellClass(
+                        cell,
+                        true,
+                        getShipNeighbors(parsedState.playerBoard, rowIndex, colIndex)
+                      )}
                       role="gridcell"
                       aria-label={`Player ${FILES[colIndex]}${RANKS[rowIndex]}`}
                     />
