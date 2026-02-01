@@ -283,9 +283,52 @@ def register_tools(app: FastMCP) -> None:
         description="Start a new blackjack game for chat-driven play.",
         meta=_tool_meta(output_template_uri=BLACKJACK_WIDGET_TEMPLATE_URI),
     )
-    def new_blackjack_game() -> ToolResult:
+    def new_blackjack_game(
+        stack: int | float | None = None,
+        bet: int | float | None = None,
+    ) -> ToolResult:
+        resolved_stack = 1000.0 if stack is None else float(stack)
+        if resolved_stack <= 0:
+            payload = {
+                "type": "blackjack_snapshot",
+                "gameType": "blackjack",
+                "gameId": "unknown",
+                "state": "",
+                "status": "in_progress",
+                "turn": "player",
+                "legal": False,
+                "error": "Stack must be positive.",
+            }
+            return ToolResult(content=[], structured_content=payload)
+
+        resolved_bet = float(bet) if bet is not None else min(10.0, resolved_stack)
+        if resolved_bet <= 0:
+            payload = {
+                "type": "blackjack_snapshot",
+                "gameType": "blackjack",
+                "gameId": "unknown",
+                "state": "",
+                "status": "in_progress",
+                "turn": "player",
+                "legal": False,
+                "error": "Bet must be positive.",
+            }
+            return ToolResult(content=[], structured_content=payload)
+        if resolved_bet > resolved_stack:
+            payload = {
+                "type": "blackjack_snapshot",
+                "gameType": "blackjack",
+                "gameId": "unknown",
+                "state": "",
+                "status": "in_progress",
+                "turn": "player",
+                "legal": False,
+                "error": "Bet cannot exceed stack.",
+            }
+            return ToolResult(content=[], structured_content=payload)
+
         game_id = f"g_{uuid.uuid4().hex}"
-        state = initial_blackjack_state()
+        state = initial_blackjack_state(stack=resolved_stack, bet=resolved_bet)
         payload = {
             "type": "blackjack_snapshot",
             "gameType": "blackjack",

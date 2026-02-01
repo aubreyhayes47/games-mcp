@@ -32,6 +32,8 @@ const parseState = (state) => {
     return {
       dealer: [],
       playerHands: [],
+      stack: 0,
+      bet: 0,
       turn: "player",
       handIndex: 0,
       status: "in_progress",
@@ -57,11 +59,12 @@ const parseState = (state) => {
       return [];
     }
     return value.split(";").map((chunk) => {
-      const [cardsRaw, handState, doubledRaw] = chunk.split("@");
+      const [cardsRaw, handState, doubledRaw, betRaw] = chunk.split("@");
       return {
         cards: parseList(cardsRaw),
         state: handState,
         doubled: doubledRaw === "1",
+        bet: Number(betRaw || parts.B || 0),
       };
     });
   };
@@ -69,6 +72,8 @@ const parseState = (state) => {
   return {
     dealer: parseList(parts.D),
     playerHands: parseHands(parts.P),
+    stack: Number(parts.BK || 0),
+    bet: Number(parts.B || 0),
     turn: parts.T || "player",
     handIndex: Number(parts.H || 0),
     status: parts.ST || "in_progress",
@@ -189,6 +194,12 @@ export default function App() {
           <strong>Turn:</strong> {snapshot?.turn || "-"}
         </div>
         <div>
+          <strong>Stack:</strong> {parsedState.stack}
+        </div>
+        <div>
+          <strong>Bet:</strong> {parsedState.bet}
+        </div>
+        <div>
           <strong>Last action:</strong> {snapshot?.lastAction || "-"}
         </div>
       </section>
@@ -262,6 +273,7 @@ export default function App() {
                         </div>
                         <div className="hand-meta">
                           <span>Total: {handValue(hand.cards)}</span>
+                          <span>Bet: {hand.bet}</span>
                           <span>State: {hand.state}</span>
                           <span>Doubled: {hand.doubled ? "Yes" : "No"}</span>
                           {parsedState.results?.[index] ? (

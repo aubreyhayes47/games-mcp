@@ -17,12 +17,22 @@ from blackjack_rules import (  # noqa: E402
 
 
 def build_state(
-    *, shoe, player_hands, dealer, turn="player", hand_index=0, status="in_progress"
+    *,
+    shoe,
+    player_hands,
+    dealer,
+    stack=1000.0,
+    bet=10.0,
+    turn="player",
+    hand_index=0,
+    status="in_progress",
 ):
     state = BlackjackState(
         shoe=shoe,
         player_hands=player_hands,
         dealer=dealer,
+        stack=stack,
+        bet=bet,
         turn=turn,
         hand_index=hand_index,
         status=status,
@@ -45,7 +55,9 @@ def test_hand_value_soft_ace():
 def test_legal_player_actions_include_split_and_double():
     state_str = build_state(
         shoe=["2S", "3D"],
-        player_hands=[BlackjackHand(cards=["8S", "8D"], state="active", doubled=False)],
+        player_hands=[
+            BlackjackHand(cards=["8S", "8D"], state="active", doubled=False, bet=10.0)
+        ],
         dealer=["5H", "KD"],
     )
     state = parse_state(state_str)
@@ -59,7 +71,9 @@ def test_legal_player_actions_include_split_and_double():
 def test_apply_hit_bust_advances_turn():
     state_str = build_state(
         shoe=["5H"],
-        player_hands=[BlackjackHand(cards=["TS", "9D"], state="active", doubled=False)],
+        player_hands=[
+            BlackjackHand(cards=["TS", "9D"], state="active", doubled=False, bet=10.0)
+        ],
         dealer=["7C", "8C"],
     )
     result = apply_blackjack_action(state_str, "hit")
@@ -72,7 +86,9 @@ def test_apply_hit_bust_advances_turn():
 def test_apply_split_creates_two_hands():
     state_str = build_state(
         shoe=["2S", "3D"],
-        player_hands=[BlackjackHand(cards=["8S", "8D"], state="active", doubled=False)],
+        player_hands=[
+            BlackjackHand(cards=["8S", "8D"], state="active", doubled=False, bet=10.0)
+        ],
         dealer=["5H", "KD"],
     )
     result = apply_blackjack_action(state_str, "split")
@@ -87,7 +103,9 @@ def test_apply_split_creates_two_hands():
 def test_apply_double_stands_hand():
     state_str = build_state(
         shoe=["5H"],
-        player_hands=[BlackjackHand(cards=["5S", "6D"], state="active", doubled=False)],
+        player_hands=[
+            BlackjackHand(cards=["5S", "6D"], state="active", doubled=False, bet=10.0)
+        ],
         dealer=["7C", "8C"],
     )
     result = apply_blackjack_action(state_str, "double")
@@ -101,7 +119,9 @@ def test_apply_double_stands_hand():
 def test_legal_dealer_actions_soft_17_stands():
     state_str = build_state(
         shoe=["2S"],
-        player_hands=[BlackjackHand(cards=["9S", "8D"], state="stood", doubled=False)],
+        player_hands=[
+            BlackjackHand(cards=["9S", "8D"], state="stood", doubled=False, bet=10.0)
+        ],
         dealer=["AS", "6D"],
         turn="dealer",
     )
@@ -113,7 +133,9 @@ def test_legal_dealer_actions_soft_17_stands():
 def test_resolve_results_dealer_bust():
     state_str = build_state(
         shoe=[],
-        player_hands=[BlackjackHand(cards=["9S", "8D"], state="stood", doubled=False)],
+        player_hands=[
+            BlackjackHand(cards=["9S", "8D"], state="stood", doubled=False, bet=10.0)
+        ],
         dealer=["TS", "8C", "6H"],
         turn="dealer",
         status="game_over",
@@ -121,3 +143,37 @@ def test_resolve_results_dealer_bust():
     state = parse_state(state_str)
     results = resolve_results(state)
     assert results == ["win"]
+
+
+def test_double_not_allowed_when_stack_insufficient():
+    state_str = build_state(
+        shoe=["2S"],
+        player_hands=[
+            BlackjackHand(cards=["9S", "8D"], state="active", doubled=False, bet=10.0)
+        ],
+        dealer=["AS", "6D"],
+        stack=10.0,
+        bet=10.0,
+    )
+    state = parse_state(state_str)
+    actions = legal_player_actions(state)
+    assert "double" not in actions
+
+
+def test_blackjack_payout_updates_stack():
+    state_str = build_state(
+        shoe=[],
+        player_hands=[
+            BlackjackHand(cards=["AS", "KD"], state="stood", doubled=False, bet=10.0)
+        ],
+        dealer=["9S", "7D"],
+        stack=100.0,
+        bet=10.0,
+        turn="dealer",
+        status="in_progress",
+    )
+    result = apply_blackjack_action(state_str, "stand")
+    assert result["legal"] is True
+    parsed = parse_state(result["state"])
+    assert parsed.status == "game_over"
+    assert parsed.stack == 115.0

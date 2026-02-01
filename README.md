@@ -238,19 +238,24 @@ If illegal:
 ### Blackjack state format
 
 ```
-S:<shoe>|P:<hand1;hand2>|D:<dealer>|T:<turn>|H:<hand_index>|ST:<status>|LA:<last_action>|R:<results>
+S:<shoe>|P:<hand1;hand2>|D:<dealer>|BK:<stack>|B:<bet>|T:<turn>|H:<hand_index>|ST:<status>|LA:<last_action>|R:<results>
 ```
 
-Hands are encoded as `cards@state@doubled`, for example:
+Hands are encoded as `cards@state@doubled@bet`, for example:
 
 ```
-P:AS,8D@active@0;7C,7H@active@0
+P:AS,8D@active@0@10;7C,7H@active@0@10
 ```
 
 `R` is optional and contains per-hand results when the game is over (`win`,
 `lose`, `push`, `bust`, `blackjack`).
 
 ### Tool: `new_blackjack_game`
+
+**Input**
+
+* `stack` (optional, default 1000)
+* `bet` (optional, default 10 or `stack` if smaller)
 
 **Output (structuredContent)**
 

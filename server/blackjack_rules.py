@@ -34,6 +34,7 @@ class BlackjackHand:
     cards: list[str]
     state: str
     doubled: bool
+    bet: float
 
 
 @dataclass
@@ -41,6 +42,8 @@ class BlackjackState:
     shoe: list[str]
     player_hands: list[BlackjackHand]
     dealer: list[str]
+    stack: float
+    bet: float
     turn: str
     hand_index: int
     status: str
@@ -61,6 +64,8 @@ def serialize_state(state: BlackjackState) -> str:
             f"S:{_serialize_list(state.shoe)}",
             f"P:{_serialize_hands(state.player_hands)}",
             f"D:{_serialize_list(state.dealer)}",
+            f"BK:{_format_amount(state.stack)}",
+            f"B:{_format_amount(state.bet)}",
             f"T:{state.turn}",
             f"H:{state.hand_index}",
             f"ST:{state.status}",
@@ -80,7 +85,9 @@ def parse_state(state_str: str) -> BlackjackState:
         key, value = chunk.split(":", 1)
         parts[key] = value
     shoe = _parse_list(parts.get("S"))
-    player_hands = _parse_hands(parts.get("P"))
+    stack = _parse_amount(parts.get("BK"), default=0.0)
+    bet = _parse_amount(parts.get("B"), default=0.0)
+    player_hands = _parse_hands(parts.get("P"), base_bet=bet)
     dealer = _parse_list(parts.get("D"))
     turn = parts.get("T") or TURN_PLAYER
     hand_index_raw = parts.get("H")
@@ -108,6 +115,8 @@ def parse_state(state_str: str) -> BlackjackState:
         shoe=shoe,
         player_hands=player_hands,
         dealer=dealer,
+        stack=stack,
+        bet=bet,
         turn=turn,
         hand_index=hand_index,
         status=status,
@@ -116,10 +125,15 @@ def parse_state(state_str: str) -> BlackjackState:
     )
 
 
-def initial_blackjack_state(rng: random.Random | None = None) -> BlackjackState:
+def initial_blackjack_state(
+    *,
+    stack: float,
+    bet: float,
+    rng: random.Random | None = None,
+) -> BlackjackState:
     shoe = new_shoe(rng)
     player_hand = BlackjackHand(
-        cards=[_draw(shoe), _draw(shoe)], state="active", doubled=False
+        cards=[_draw(shoe), _draw(shoe)], state="active", doubled=False, bet=bet
     )
     dealer = [_draw(shoe), _draw(shoe)]
 
@@ -131,13 +145,15 @@ def initial_blackjack_state(rng: random.Random | None = None) -> BlackjackState:
         shoe=shoe,
         player_hands=[player_hand],
         dealer=dealer,
+        stack=stack,
+        bet=bet,
         turn=TURN_PLAYER,
         hand_index=0,
         status=status,
         last_action="deal",
     )
     if status == STATUS_GAME_OVER:
-        state.results = resolve_results(state)
+        _apply_results(state)
     return state
 
 
@@ -148,7 +164,7 @@ def legal_player_actions(state: BlackjackState) -> list[str]:
     if hand is None or hand.state != "active":
         return []
     actions = ["hit", "stand"]
-    if _can_double(hand):
+    if _can_double(state, hand):
         actions.append("double")
     if _can_split(state, hand):
         actions.append("split")
@@ -237,6 +253,12 @@ def resolve_results(state: BlackjackState) -> list[str]:
     return results
 
 
+def _apply_results(state: BlackjackState) -> None:
+    results = resolve_results(state)
+    state.results = results
+    state.stack = _settle_stack(state, results)
+
+
 def _apply_player_action(state: BlackjackState, action: str) -> None:
     hand = _current_hand(state)
     if hand is None:
@@ -260,8 +282,11 @@ def _apply_player_action(state: BlackjackState, action: str) -> None:
         return
 
     if action == "double":
+        if not _can_double(state, hand):
+            return
         hand.cards.append(_draw(state.shoe))
         hand.doubled = True
+        hand.bet = hand.bet * 2
         total, _ = hand_value(hand.cards)
         if total > 21:
             hand.state = "bust"
@@ -271,6 +296,8 @@ def _apply_player_action(state: BlackjackState, action: str) -> None:
         return
 
     if action == "split":
+        if not _can_split(state, hand):
+            return
         _apply_split(state, hand)
         return
 
@@ -280,12 +307,12 @@ def _apply_dealer_action(state: BlackjackState, action: str) -> None:
         state.dealer.append(_draw(state.shoe))
         if hand_value(state.dealer)[0] > 21:
             state.status = STATUS_GAME_OVER
-            state.results = resolve_results(state)
+            _apply_results(state)
         return
 
     if action == "stand":
         state.status = STATUS_GAME_OVER
-        state.results = resolve_results(state)
+        _apply_results(state)
 
 
 def _apply_split(state: BlackjackState, hand: BlackjackHand) -> None:
@@ -296,7 +323,10 @@ def _apply_split(state: BlackjackState, hand: BlackjackHand) -> None:
     hand.state = "active"
     hand.doubled = False
     new_hand = BlackjackHand(
-        cards=[right_card, _draw(state.shoe)], state="active", doubled=False
+        cards=[right_card, _draw(state.shoe)],
+        state="active",
+        doubled=False,
+        bet=hand.bet,
     )
     state.player_hands.insert(state.hand_index + 1, new_hand)
 
@@ -310,14 +340,14 @@ def _advance_player_turn(state: BlackjackState) -> None:
     if state.player_hands and all(hand.state == "bust" for hand in state.player_hands):
         state.turn = TURN_DEALER
         state.status = STATUS_GAME_OVER
-        state.results = resolve_results(state)
+        _apply_results(state)
         return
 
     state.turn = TURN_DEALER
     state.hand_index = max(0, min(state.hand_index, len(state.player_hands) - 1))
     if _is_blackjack(state.dealer):
         state.status = STATUS_GAME_OVER
-        state.results = resolve_results(state)
+        _apply_results(state)
 
 
 def _current_hand(state: BlackjackState) -> BlackjackHand | None:
@@ -328,14 +358,20 @@ def _current_hand(state: BlackjackState) -> BlackjackHand | None:
     return state.player_hands[state.hand_index]
 
 
-def _can_double(hand: BlackjackHand) -> bool:
-    return len(hand.cards) == 2 and hand.state == "active"
+def _can_double(state: BlackjackState, hand: BlackjackHand) -> bool:
+    if len(hand.cards) != 2 or hand.state != "active":
+        return False
+    total_wagered = _total_wagered(state)
+    return state.stack >= total_wagered + hand.bet
 
 
 def _can_split(state: BlackjackState, hand: BlackjackHand) -> bool:
     if len(hand.cards) != 2 or hand.state != "active":
         return False
     if len(state.player_hands) >= MAX_HANDS:
+        return False
+    total_wagered = _total_wagered(state)
+    if state.stack < total_wagered + hand.bet:
         return False
     return _card_rank(hand.cards[0]) == _card_rank(hand.cards[1])
 
@@ -378,17 +414,55 @@ def _parse_list(raw: str | None) -> list[str]:
     return [item.strip() for item in raw.split(",") if item.strip()]
 
 
+def _parse_amount(raw: str | None, *, default: float) -> float:
+    if raw is None or raw == "-" or raw == "":
+        return default
+    try:
+        value = float(raw)
+    except ValueError as exc:
+        raise ValueError("Invalid blackjack amount.") from exc
+    if value < 0:
+        raise ValueError("Invalid blackjack amount.")
+    return value
+
+
+def _format_amount(value: float) -> str:
+    if isinstance(value, int):
+        return str(value)
+    if value.is_integer():
+        return str(int(value))
+    return str(value)
+
+
+def _total_wagered(state: BlackjackState) -> float:
+    return sum(hand.bet for hand in state.player_hands)
+
+
+def _settle_stack(state: BlackjackState, results: list[str]) -> float:
+    delta = 0.0
+    for hand, outcome in zip(state.player_hands, results):
+        if outcome == "win":
+            delta += hand.bet
+        elif outcome == "blackjack":
+            delta += hand.bet * 1.5
+        elif outcome in {"lose", "bust"}:
+            delta -= hand.bet
+    return state.stack + delta
+
+
 def _serialize_hands(hands: list[BlackjackHand]) -> str:
     if not hands:
         return "-"
     chunks = []
     for hand in hands:
         cards = _serialize_list(hand.cards)
-        chunks.append(f"{cards}@{hand.state}@{1 if hand.doubled else 0}")
+        chunks.append(
+            f"{cards}@{hand.state}@{1 if hand.doubled else 0}@{_format_amount(hand.bet)}"
+        )
     return ";".join(chunks)
 
 
-def _parse_hands(raw: str | None) -> list[BlackjackHand]:
+def _parse_hands(raw: str | None, *, base_bet: float) -> list[BlackjackHand]:
     if not raw or raw == "-":
         return []
     hands: list[BlackjackHand] = []
@@ -396,14 +470,17 @@ def _parse_hands(raw: str | None) -> list[BlackjackHand]:
         if not chunk:
             continue
         parts = chunk.split("@")
-        if len(parts) != 3:
+        if len(parts) not in {3, 4}:
             raise ValueError("Invalid blackjack hand format.")
         cards = _parse_list(parts[0])
         state = parts[1]
         doubled = parts[2] == "1"
+        bet = base_bet
+        if len(parts) == 4:
+            bet = _parse_amount(parts[3], default=base_bet)
         if state not in {"active", "stood", "bust", "blackjack"}:
             raise ValueError("Invalid blackjack hand state.")
-        hands.append(BlackjackHand(cards=cards, state=state, doubled=doubled))
+        hands.append(BlackjackHand(cards=cards, state=state, doubled=doubled, bet=bet))
     return hands
 
 

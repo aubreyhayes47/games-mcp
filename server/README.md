@@ -108,13 +108,16 @@ auto-renders widget output from `new_*` and `apply_*` tool responses.
 
 ```json
 // new_blackjack_game
-{}
+{
+  "stack": 1000,
+  "bet": 10
+}
 ```
 
 ```json
 // legal_blackjack_actions
 {
-  "state": "S:<shoe>|P:AS,8D@active@0|D:7C,2H|T:player|H:0|ST:in_progress|LA:deal|R:-"
+  "state": "S:<shoe>|P:AS,8D@active@0@10|D:7C,2H|BK:1000|B:10|T:player|H:0|ST:in_progress|LA:deal|R:-"
 }
 ```
 
@@ -122,7 +125,7 @@ auto-renders widget output from `new_*` and `apply_*` tool responses.
 // apply_blackjack_action
 {
   "gameId": "g_example",
-  "state": "S:<shoe>|P:AS,8D@active@0|D:7C,2H|T:player|H:0|ST:in_progress|LA:deal|R:-",
+  "state": "S:<shoe>|P:AS,8D@active@0@10|D:7C,2H|BK:1000|B:10|T:player|H:0|ST:in_progress|LA:deal|R:-",
   "action": "hit"
 }
 ```
@@ -130,7 +133,7 @@ auto-renders widget output from `new_*` and `apply_*` tool responses.
 ```json
 // choose_blackjack_dealer_action
 {
-  "state": "S:<shoe>|P:AS,8D@stood@0|D:7C,2H|T:dealer|H:0|ST:in_progress|LA:stand|R:-"
+  "state": "S:<shoe>|P:AS,8D@stood@0@10|D:7C,2H|BK:1000|B:10|T:dealer|H:0|ST:in_progress|LA:stand|R:-"
 }
 ```
 
