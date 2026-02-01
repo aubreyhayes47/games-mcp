@@ -10,6 +10,7 @@ Implemented today:
 
 * Chess (LLM opponent constrained to legal moves)
 * Checkers (algebraic square notation)
+* Blackjack (LLM dealer constrained to legal actions)
 
 Planned next:
 
@@ -40,7 +41,7 @@ Planned next:
    * Orchestrates tool calls.
    * If an LLM opponent is enabled, it must choose from tool-provided legal moves.
 
-## Tool contracts (current: chess + checkers)
+## Tool contracts (current: chess + checkers + blackjack)
 
 The chess implementation is the canonical reference for tool behavior and payload
 shape. Checkers follows the same principles with a different state format.
@@ -266,6 +267,133 @@ If illegal:
   "moves": ["b6a5", "b6d4f2"],
   "policy": {
     "mustChooseFromMoves": true,
+    "chooseExactlyOne": true
+  }
+}
+```
+
+## Tool contracts (current: blackjack)
+
+### Blackjack state format
+
+```
+S:<shoe>|P:<hand1;hand2>|D:<dealer>|T:<turn>|H:<hand_index>|ST:<status>|LA:<last_action>|R:<results>
+```
+
+Hands are encoded as `cards@state@doubled`, for example:
+
+```
+P:AS,8D@active@0;7C,7H@active@0
+```
+
+`R` is optional and contains per-hand results when the game is over (`win`,
+`lose`, `push`, `bust`, `blackjack`).
+
+### Tool: `render_blackjack_game`
+
+**Input**
+
+* `snapshot`: object (must include `state` and `gameId`, plus optional status fields)
+
+**Output (structuredContent)**
+
+```json
+{
+  "type": "blackjack_snapshot",
+  "gameType": "blackjack",
+  "gameId": "g_123",
+  "state": "<STATE>",
+  "status": "in_progress",
+  "turn": "player"
+}
+```
+
+### Tool: `new_blackjack_game`
+
+**Output (structuredContent)**
+
+```json
+{
+  "type": "blackjack_snapshot",
+  "gameType": "blackjack",
+  "gameId": "g_123",
+  "state": "<STATE>",
+  "status": "in_progress",
+  "turn": "player",
+  "lastAction": "deal"
+}
+```
+
+### Tool: `apply_blackjack_action`
+
+**Input**
+
+* `gameId`
+* `state`
+* `action` (string): `hit`, `stand`, `double`, `split`
+
+**Output (structuredContent)**
+
+```json
+{
+  "type": "blackjack_snapshot",
+  "gameType": "blackjack",
+  "gameId": "g_123",
+  "legal": true,
+  "state": "<NEW_STATE>",
+  "status": "in_progress",
+  "turn": "dealer",
+  "lastAction": "hit",
+  "handIndex": 0
+}
+```
+
+If illegal:
+
+```json
+{
+  "type": "blackjack_snapshot",
+  "gameType": "blackjack",
+  "gameId": "g_123",
+  "legal": false,
+  "state": "<UNCHANGED_STATE>",
+  "error": "Illegal action."
+}
+```
+
+### Tool: `legal_blackjack_actions` (read-only)
+
+**Input**
+
+* `state`
+
+**Output (structuredContent)**
+
+```json
+{
+  "type": "legal_actions",
+  "gameType": "blackjack",
+  "actions": ["hit", "stand", "double"],
+  "turn": "player",
+  "handIndex": 0
+}
+```
+
+### Tool: `choose_blackjack_dealer_action`
+
+**Input**
+
+* `state`
+
+**Output (structuredContent)**
+
+```json
+{
+  "type": "opponent_choice",
+  "gameType": "blackjack",
+  "actions": ["hit", "stand"],
+  "policy": {
+    "mustChooseFromActions": true,
     "chooseExactlyOne": true
   }
 }

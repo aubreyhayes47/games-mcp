@@ -18,6 +18,12 @@ To run the checkers widget locally:
 npm run dev:checkers
 ```
 
+To run the blackjack widget locally:
+
+```bash
+npm run dev:blackjack
+```
+
 ## Build
 
 ```bash
@@ -30,9 +36,16 @@ To build the checkers widget bundle:
 npm run build:checkers
 ```
 
+To build the blackjack widget bundle:
+
+```bash
+npm run build:blackjack
+```
+
 ## Notes
 
 - The chess widget lives at `web/widgets/chess/`.
 - The checkers widget lives at `web/widgets/checkers/`.
+- The blackjack widget lives at `web/widgets/blackjack/`.
 - The widget reads from `window.openai.toolOutput`.
 - The build output is embedded into the server template.

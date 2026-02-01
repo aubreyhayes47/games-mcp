@@ -22,6 +22,7 @@ cd web
 npm install
 npm run build
 npm run build:checkers
+npm run build:blackjack
 ```
 
 The server reads `web/widgets/<game>/dist/widget.js` and
@@ -131,6 +132,47 @@ uses `render_chess_game` or `render_checkers_game` as the only widget-rendering 
 }
 ```
 
+```json
+// new_blackjack_game
+{}
+```
+
+```json
+// render_blackjack_game
+{
+  "snapshot": {
+    "type": "blackjack_snapshot",
+    "gameId": "g_example",
+    "state": "S:<shoe>|P:AS,8D@active@0|D:7C,2H|T:player|H:0|ST:in_progress|LA:deal|R:-",
+    "status": "in_progress",
+    "turn": "player"
+  }
+}
+```
+
+```json
+// legal_blackjack_actions
+{
+  "state": "S:<shoe>|P:AS,8D@active@0|D:7C,2H|T:player|H:0|ST:in_progress|LA:deal|R:-"
+}
+```
+
+```json
+// apply_blackjack_action
+{
+  "gameId": "g_example",
+  "state": "S:<shoe>|P:AS,8D@active@0|D:7C,2H|T:player|H:0|ST:in_progress|LA:deal|R:-",
+  "action": "hit"
+}
+```
+
+```json
+// choose_blackjack_dealer_action
+{
+  "state": "S:<shoe>|P:AS,8D@stood@0|D:7C,2H|T:dealer|H:0|ST:in_progress|LA:stand|R:-"
+}
+```
+
 ## Running tests
 
 ```bash
@@ -182,10 +224,11 @@ orchestrator should call `choose_chess_opponent_move` again to request a valid m
 - Chess rules and legality checks live in `chess_rules.py`.
 - Checkers rules and legality checks live in `checkers_rules.py`.
 - The widget HTML templates are in `templates/chess-board-v1.html` and
-  `templates/checkers-board-v1.html`.
+  `templates/checkers-board-v1.html`, and `templates/blackjack-board-v1.html`.
 - Widget resources are registered in `app.py` with the URIs
   `ui://widget/chess-board-v1.html` and
-  `ui://widget/checkers-board-v1.html`, served with
+  `ui://widget/checkers-board-v1.html`, and
+  `ui://widget/blackjack-board-v1.html`, served with
   `mimeType: text/html+skybridge`.
 - To cache-bust future template changes, version the URI and template name
   (for example `ui://widget/chess-board-v2.html` plus a new

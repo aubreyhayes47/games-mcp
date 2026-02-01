@@ -5,6 +5,7 @@ import mcp.types as types
 URL = "http://127.0.0.1:10000/mcp"
 WIDGET_URI = "ui://widget/chess-board-v1.html"
 CHECKERS_WIDGET_URI = "ui://widget/checkers-board-v1.html"
+BLACKJACK_WIDGET_URI = "ui://widget/blackjack-board-v1.html"
 
 
 class McpHttpClient:
@@ -174,6 +175,61 @@ def run_checkers(client: McpHttpClient) -> None:
     print("render_checkers_game:", rendered["result"]["structuredContent"])
 
 
+def run_blackjack(client: McpHttpClient) -> None:
+    _, widget = client.request("resources/read", {"uri": BLACKJACK_WIDGET_URI})
+    widget_text = widget["result"]["contents"][0].get("text") or widget["result"][
+        "contents"
+    ][0].get("content")
+
+    _, new_blackjack_game = client.request(
+        "tools/call", {"name": "new_blackjack_game", "arguments": {}}
+    )
+    snapshot = new_blackjack_game["result"]["structuredContent"]
+    _, legal_blackjack_actions = client.request(
+        "tools/call",
+        {"name": "legal_blackjack_actions", "arguments": {"state": snapshot["state"]}},
+    )
+    actions = legal_blackjack_actions["result"]["structuredContent"]["actions"]
+    action = "stand" if "stand" in actions else actions[0] if actions else "stand"
+    _, applied_blackjack_action = client.request(
+        "tools/call",
+        {
+            "name": "apply_blackjack_action",
+            "arguments": {
+                "gameId": snapshot["gameId"],
+                "state": snapshot["state"],
+                "action": action,
+            },
+        },
+    )
+    apply_snapshot = applied_blackjack_action["result"]["structuredContent"]
+    _, choose_blackjack_dealer_action = client.request(
+        "tools/call",
+        {
+            "name": "choose_blackjack_dealer_action",
+            "arguments": {"state": apply_snapshot["state"]},
+        },
+    )
+    _, rendered = client.request(
+        "tools/call",
+        {
+            "name": "render_blackjack_game",
+            "arguments": {"snapshot": apply_snapshot},
+        },
+    )
+
+    print("\n=== Blackjack ===")
+    print("widget_bytes:", len(widget_text) if widget_text else 0)
+    print("new_blackjack_game:", snapshot)
+    print("legal_blackjack_actions:", actions)
+    print("apply_blackjack_action:", apply_snapshot)
+    print(
+        "choose_blackjack_dealer_action:",
+        choose_blackjack_dealer_action["result"]["structuredContent"],
+    )
+    print("render_blackjack_game:", rendered["result"]["structuredContent"])
+
+
 def main() -> None:
     client = McpHttpClient(URL)
 
@@ -207,6 +263,7 @@ def main() -> None:
 
     run_chess(client)
     run_checkers(client)
+    run_blackjack(client)
 
 
 if __name__ == "__main__":

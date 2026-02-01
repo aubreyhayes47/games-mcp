@@ -11,6 +11,14 @@ from fastmcp.tools.tool import ToolResult
 
 try:
     from .chess_rules import apply_uci_move, legal_moves_uci, opponent_move_candidates
+    from .blackjack_rules import (
+        apply_blackjack_action as apply_blackjack_action_rule,
+        initial_blackjack_state,
+        legal_dealer_actions,
+        legal_player_actions,
+        parse_state as parse_blackjack_state,
+        serialize_state as serialize_blackjack_state,
+    )
     from .checkers_rules import (
         all_checkers_moves,
         apply_checkers_move as apply_checkers_move_rule,
@@ -20,6 +28,14 @@ try:
     )
 except ImportError:  # pragma: no cover - fallback for script execution
     from chess_rules import apply_uci_move, legal_moves_uci, opponent_move_candidates
+    from blackjack_rules import (
+        apply_blackjack_action as apply_blackjack_action_rule,
+        initial_blackjack_state,
+        legal_dealer_actions,
+        legal_player_actions,
+        parse_state as parse_blackjack_state,
+        serialize_state as serialize_blackjack_state,
+    )
     from checkers_rules import (
         all_checkers_moves,
         apply_checkers_move as apply_checkers_move_rule,
@@ -30,6 +46,7 @@ except ImportError:  # pragma: no cover - fallback for script execution
 
 CHESS_WIDGET_TEMPLATE_URI = "ui://widget/chess-board-v1.html"
 CHECKERS_WIDGET_TEMPLATE_URI = "ui://widget/checkers-board-v1.html"
+BLACKJACK_WIDGET_TEMPLATE_URI = "ui://widget/blackjack-board-v1.html"
 OPPONENT_MOVE_CAP = 200
 
 
@@ -302,6 +319,154 @@ def register_tools(app: FastMCP) -> None:
             "moves": moves,
             "policy": {
                 "mustChooseFromMoves": True,
+                "chooseExactlyOne": True,
+            },
+        }
+        return ToolResult(content=content, structured_content=payload)
+
+    @app.tool(
+        name="render_blackjack_game",
+        description="Render the blackjack widget for the provided snapshot.",
+        meta=_tool_meta(output_template_uri=BLACKJACK_WIDGET_TEMPLATE_URI),
+    )
+    def render_blackjack_game(snapshot: dict) -> ToolResult:
+        if not isinstance(snapshot, dict):
+            payload = {
+                "type": "blackjack_snapshot",
+                "gameType": "blackjack",
+                "gameId": "unknown",
+                "state": "",
+                "status": "in_progress",
+                "turn": "player",
+                "legal": False,
+                "error": "Invalid snapshot payload.",
+            }
+            return ToolResult(content=[], structured_content=payload)
+        snapshot_payload = {**snapshot}
+        snapshot_payload.setdefault("type", "blackjack_snapshot")
+        snapshot_payload.setdefault("gameType", "blackjack")
+        return ToolResult(content=[], structured_content=snapshot_payload)
+
+    @app.tool(
+        name="new_blackjack_game",
+        description="Start a new blackjack game for chat-driven play.",
+        meta=_tool_meta(),
+    )
+    def new_blackjack_game() -> ToolResult:
+        game_id = f"g_{uuid.uuid4().hex}"
+        state = initial_blackjack_state()
+        payload = {
+            "type": "blackjack_snapshot",
+            "gameType": "blackjack",
+            "gameId": game_id,
+            "state": serialize_blackjack_state(state),
+            "status": state.status,
+            "turn": state.turn,
+            "lastAction": state.last_action,
+        }
+        if state.results:
+            payload["results"] = state.results
+        return ToolResult(content=[], structured_content=payload)
+
+    @app.tool(
+        name="apply_blackjack_action",
+        description=(
+            "Validate and apply a blackjack action to the provided state. Intended for "
+            "the model to call after the user types an action in chat."
+        ),
+        meta=_tool_meta(),
+        annotations={
+            "readOnlyHint": False,
+            "openWorldHint": False,
+            "destructiveHint": False,
+        },
+    )
+    def apply_blackjack_action(gameId: str, state: str, action: str) -> ToolResult:  # noqa: N803
+        result = apply_blackjack_action_rule(state, action)
+        if not result["legal"]:
+            payload = {
+                "type": "blackjack_snapshot",
+                "gameType": "blackjack",
+                "gameId": gameId,
+                "legal": False,
+                "state": result["state"],
+                "error": result.get("error") or "Illegal action.",
+            }
+            return ToolResult(content=[], structured_content=payload)
+
+        payload = {
+            "type": "blackjack_snapshot",
+            "gameType": "blackjack",
+            "gameId": gameId,
+            "legal": True,
+            "state": result["state"],
+            "status": result["status"],
+            "turn": result["turn"],
+            "lastAction": result.get("lastAction"),
+            "handIndex": result.get("handIndex"),
+        }
+        if result.get("results"):
+            payload["results"] = result["results"]
+        return ToolResult(content=[], structured_content=payload)
+
+    @app.tool(
+        name="legal_blackjack_actions",
+        description=(
+            "List legal blackjack actions for the current state so the model can "
+            "interpret chat input."
+        ),
+        meta=_tool_meta(),
+        annotations={"readOnlyHint": True},
+    )
+    def legal_blackjack_actions(state: str) -> ToolResult:
+        actions: list[str] = []
+        turn = "player"
+        hand_index = 0
+        try:
+            parsed = parse_blackjack_state(state)
+            actions = legal_player_actions(parsed)
+            turn = parsed.turn
+            hand_index = parsed.hand_index
+        except ValueError:
+            actions = []
+        payload = {
+            "type": "legal_actions",
+            "gameType": "blackjack",
+            "actions": actions,
+            "turn": turn,
+            "handIndex": hand_index,
+        }
+        return ToolResult(content=[], structured_content=payload)
+
+    @app.tool(
+        name="choose_blackjack_dealer_action",
+        description=(
+            "Return legal dealer actions and opponent selection policy for the "
+            "model-driven dealer turn loop."
+        ),
+        meta=_tool_meta(),
+    )
+    def choose_blackjack_dealer_action(state: str) -> ToolResult:
+        actions: list[str] = []
+        content = []
+        try:
+            parsed = parse_blackjack_state(state)
+            actions = legal_dealer_actions(parsed)
+        except ValueError:
+            actions = []
+        if not actions:
+            content = [
+                {
+                    "type": "text",
+                    "text": "No legal dealer actions available; the game is over.",
+                }
+            ]
+        payload = {
+            "type": "opponent_choice",
+            "gameType": "blackjack",
+            "actions": actions,
+            "policy": {
+                "mustChooseFromActions": True,
                 "chooseExactlyOne": True,
             },
         }

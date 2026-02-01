@@ -16,8 +16,10 @@ except ImportError:  # pragma: no cover - fallback for script execution
 
 CHESS_WIDGET_VERSION = "v1"
 CHECKERS_WIDGET_VERSION = "v1"
+BLACKJACK_WIDGET_VERSION = "v1"
 CHESS_WIDGET_URI = f"ui://widget/chess-board-{CHESS_WIDGET_VERSION}.html"
 CHECKERS_WIDGET_URI = f"ui://widget/checkers-board-{CHECKERS_WIDGET_VERSION}.html"
+BLACKJACK_WIDGET_URI = f"ui://widget/blackjack-board-{BLACKJACK_WIDGET_VERSION}.html"
 WIDGET_MIME_TYPE = "text/html+skybridge"
 WIDGET_DOMAIN = os.getenv("WIDGET_DOMAIN", "https://chess-mcp.example.com")
 MCP_SERVER_ORIGIN = os.getenv("MCP_SERVER_ORIGIN")
@@ -50,11 +52,19 @@ CHECKERS_WIDGET_TEMPLATE_PATH = (
     / "templates"
     / f"checkers-board-{CHECKERS_WIDGET_VERSION}.html"
 )
+BLACKJACK_WIDGET_TEMPLATE_PATH = (
+    Path(__file__).resolve().parent
+    / "templates"
+    / f"blackjack-board-{BLACKJACK_WIDGET_VERSION}.html"
+)
 
 CHESS_WIDGET_JS_PATH = CHESS_WIDGET_BUILD_DIR / "widget.js"
 CHESS_WIDGET_CSS_PATH = CHESS_WIDGET_BUILD_DIR / "widget.css"
 CHECKERS_WIDGET_JS_PATH = CHECKERS_WIDGET_BUILD_DIR / "widget.js"
 CHECKERS_WIDGET_CSS_PATH = CHECKERS_WIDGET_BUILD_DIR / "widget.css"
+BLACKJACK_WIDGET_BUILD_DIR = WIDGET_BUILD_ROOT / "blackjack" / "dist"
+BLACKJACK_WIDGET_JS_PATH = BLACKJACK_WIDGET_BUILD_DIR / "widget.js"
+BLACKJACK_WIDGET_CSS_PATH = BLACKJACK_WIDGET_BUILD_DIR / "widget.css"
 
 app = FastMCP("games-mcp")
 register_tools(app)
@@ -102,6 +112,15 @@ def checkers_widget_template() -> str:
     )
 
 
+@app.resource(BLACKJACK_WIDGET_URI, mime_type=WIDGET_MIME_TYPE)
+def blackjack_widget_template() -> str:
+    return load_widget_template(
+        BLACKJACK_WIDGET_TEMPLATE_PATH,
+        BLACKJACK_WIDGET_JS_PATH,
+        BLACKJACK_WIDGET_CSS_PATH,
+    )
+
+
 @app._mcp_server.read_resource()
 async def read_resource(uri: str):
     resource = await app._resource_manager.get_resource(uri)
@@ -110,7 +129,7 @@ async def read_resource(uri: str):
 
     content = await resource.read()
     meta = None
-    if str(uri) in {CHESS_WIDGET_URI, CHECKERS_WIDGET_URI}:
+    if str(uri) in {CHESS_WIDGET_URI, CHECKERS_WIDGET_URI, BLACKJACK_WIDGET_URI}:
         meta = {
             "openai/widgetDomain": WIDGET_DOMAIN,
             "openai/widgetCSP": WIDGET_CSP,
