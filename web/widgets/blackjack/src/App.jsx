@@ -93,6 +93,13 @@ const cardLabel = (card) => {
   return `${rank}${suit}`;
 };
 
+const isRedSuit = (card) => {
+  if (!card || card.length !== 2) {
+    return false;
+  }
+  return card[1] === "H" || card[1] === "D";
+};
+
 const handValue = (cards) => {
   let total = 0;
   let aces = 0;
@@ -156,6 +163,11 @@ export default function App() {
     () => parseState(snapshot?.state),
     [snapshot?.state]
   );
+  const hideDealerHoleCard =
+    snapshot?.turn === "player" && snapshot?.status === "in_progress";
+  const visibleDealerCards = hideDealerHoleCard
+    ? parsedState.dealer.slice(0, 1)
+    : parsedState.dealer;
 
   return (
     <main className="app">
@@ -194,15 +206,25 @@ export default function App() {
                 {parsedState.dealer.length === 0 ? (
                   <div className="card card--empty">-</div>
                 ) : (
-                  parsedState.dealer.map((card, idx) => (
-                    <div key={`dealer-${card}-${idx}`} className="card">
-                      <span>{cardLabel(card)}</span>
-                    </div>
-                  ))
+                  <>
+                    {visibleDealerCards.map((card, idx) => (
+                      <div
+                        key={`dealer-${card}-${idx}`}
+                        className={`card ${isRedSuit(card) ? "card--red" : ""}`}
+                      >
+                        <span>{cardLabel(card)}</span>
+                      </div>
+                    ))}
+                    {hideDealerHoleCard ? (
+                      <div className="card card--hidden" aria-label="Hidden card" />
+                    ) : null}
+                  </>
                 )}
               </div>
               <div className="hand-meta">
-                <span>Total: {handValue(parsedState.dealer)}</span>
+                <span>
+                  Total: {hideDealerHoleCard ? "?" : handValue(parsedState.dealer)}
+                </span>
               </div>
             </div>
 
@@ -230,7 +252,9 @@ export default function App() {
                           {hand.cards.map((card, cardIndex) => (
                             <div
                               key={`hand-${index}-${card}-${cardIndex}`}
-                              className="card"
+                              className={`card ${
+                                isRedSuit(card) ? "card--red" : ""
+                              }`}
                             >
                               <span>{cardLabel(card)}</span>
                             </div>

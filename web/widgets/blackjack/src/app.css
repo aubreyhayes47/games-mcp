@@ -88,6 +88,22 @@ body {
   box-shadow: 0 2px 6px rgba(31, 41, 51, 0.08);
 }
 
+.card--red {
+  color: #b42318;
+}
+
+.card--hidden {
+  background: repeating-linear-gradient(
+    45deg,
+    #1f2933,
+    #1f2933 6px,
+    #2b3a44 6px,
+    #2b3a44 12px
+  );
+  border: 1px solid #1f2933;
+  color: transparent;
+}
+
 .card--empty {
   color: #94a3b8;
   border-style: dashed;
