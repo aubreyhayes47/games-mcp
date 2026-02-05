@@ -22,6 +22,7 @@ state. You type moves in chat and watch the board or table update instantly.
 * Slot machine (classic table with weighted symbols)
 * Four-in-a-Row (classic Connect 4)
 * Tic-Tac-Toe (X/O, A1–C3)
+* Mancala (Kalah standard, pit 1–6 moves)
 
 
 ## ⚡ Quickstart (Local)

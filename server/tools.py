@@ -44,6 +44,12 @@ try:
         legal_tic_tac_toe_moves as legal_tic_tac_toe_moves_rule,
         opponent_move_candidates as tic_tac_toe_opponent_moves,
     )
+    from .mancala_rules import (
+        apply_mancala_move as apply_mancala_move_rule,
+        initial_mancala_state,
+        legal_mancala_moves as legal_mancala_moves_rule,
+        opponent_move_candidates as mancala_opponent_moves,
+    )
     from .checkers_rules import (
         all_checkers_moves,
         apply_checkers_move as apply_checkers_move_rule,
@@ -86,6 +92,12 @@ except ImportError:  # pragma: no cover - fallback for script execution
         legal_tic_tac_toe_moves as legal_tic_tac_toe_moves_rule,
         opponent_move_candidates as tic_tac_toe_opponent_moves,
     )
+    from mancala_rules import (
+        apply_mancala_move as apply_mancala_move_rule,
+        initial_mancala_state,
+        legal_mancala_moves as legal_mancala_moves_rule,
+        opponent_move_candidates as mancala_opponent_moves,
+    )
     from checkers_rules import (
         all_checkers_moves,
         apply_checkers_move as apply_checkers_move_rule,
@@ -102,6 +114,7 @@ SEA_BATTLE_WIDGET_TEMPLATE_URI = "ui://widget/sea-battle-v1.html"
 SLOT_WIDGET_TEMPLATE_URI = "ui://widget/slot-v1.html"
 FOUR_IN_A_ROW_WIDGET_TEMPLATE_URI = "ui://widget/four-in-a-row-v1.html"
 TIC_TAC_TOE_WIDGET_TEMPLATE_URI = "ui://widget/tic-tac-toe-v1.html"
+MANCALA_WIDGET_TEMPLATE_URI = "ui://widget/mancala-board-v1.html"
 OPPONENT_MOVE_CAP = 200
 
 
@@ -934,6 +947,114 @@ def register_tools(app: FastMCP) -> None:
         payload = {
             "type": "opponent_choice",
             "gameType": "tic_tac_toe",
+            "moves": moves,
+            "policy": {
+                "mustChooseFromMoves": True,
+                "chooseExactlyOne": True,
+            },
+        }
+        return ToolResult(content=content, structured_content=payload)
+
+    @app.tool(
+        name="new_mancala_game",
+        description="Start a new Mancala (Kalah) game for chat-driven play.",
+        meta=_tool_meta(output_template_uri=MANCALA_WIDGET_TEMPLATE_URI),
+    )
+    def new_mancala_game() -> ToolResult:
+        game_id = f"g_{uuid.uuid4().hex}"
+        payload = {
+            "type": "mancala_snapshot",
+            "gameType": "mancala",
+            "gameId": game_id,
+            "state": initial_mancala_state(),
+            "status": "in_progress",
+            "turn": "player",
+        }
+        return ToolResult(content=[], structured_content=payload)
+
+    @app.tool(
+        name="apply_mancala_move",
+        description=(
+            "Validate and apply a Mancala move to the provided state. Intended for "
+            "the model to call after the user types a pit number in chat."
+        ),
+        meta=_tool_meta(output_template_uri=MANCALA_WIDGET_TEMPLATE_URI),
+        annotations={
+            "readOnlyHint": False,
+            "openWorldHint": False,
+            "destructiveHint": False,
+        },
+    )
+    def apply_mancala_move(
+        gameId: str,
+        state: str,
+        pit: int,
+    ) -> ToolResult:  # noqa: N803
+        result = apply_mancala_move_rule(state, pit)
+        if not result.legal:
+            payload = {
+                "type": "mancala_snapshot",
+                "gameType": "mancala",
+                "gameId": gameId,
+                "legal": False,
+                "state": result.state,
+                "error": result.error or "Illegal move.",
+            }
+            return ToolResult(content=[], structured_content=payload)
+
+        payload = {
+            "type": "mancala_snapshot",
+            "gameType": "mancala",
+            "gameId": gameId,
+            "legal": True,
+            "state": result.state,
+            "status": result.status,
+            "turn": result.turn,
+            "lastAction": result.last_action,
+        }
+        if result.winner:
+            payload["winner"] = result.winner
+        return ToolResult(content=[], structured_content=payload)
+
+    @app.tool(
+        name="legal_mancala_moves",
+        description=(
+            "List legal Mancala pit moves for a given state so the model can "
+            "interpret chat input."
+        ),
+        meta=_tool_meta(),
+        annotations={"readOnlyHint": True},
+    )
+    def legal_mancala_moves(state: str) -> ToolResult:
+        moves = legal_mancala_moves_rule(state)
+        payload = {
+            "type": "legal_moves",
+            "gameType": "mancala",
+            "moves": moves,
+        }
+        return ToolResult(content=[], structured_content=payload)
+
+    @app.tool(
+        name="choose_mancala_opponent_move",
+        description=(
+            "Return legal moves and opponent selection policy for the model-driven "
+            "Mancala opponent turn loop."
+        ),
+        meta=_tool_meta(),
+    )
+    def choose_mancala_opponent_move(state: str) -> ToolResult:
+        moves = mancala_opponent_moves(state, limit=OPPONENT_MOVE_CAP)
+        content = []
+        if not moves:
+            content = [
+                {
+                    "type": "text",
+                    "text": "No legal moves available; the game is over.",
+                }
+            ]
+        payload = {
+            "type": "opponent_choice",
+            "gameType": "mancala",
             "moves": moves,
             "policy": {
                 "mustChooseFromMoves": True,

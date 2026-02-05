@@ -13,7 +13,8 @@
     "dev:slot": "WIDGET=slot vite",
     "dev:four-in-a-row": "WIDGET=four-in-a-row vite",
     "dev:tic-tac-toe": "WIDGET=tic-tac-toe vite",
-    "build": "npm run build:chess && npm run build:checkers && npm run build:blackjack && npm run build:rpg-dice && npm run build:sea-battle && npm run build:slot && npm run build:four-in-a-row && npm run build:tic-tac-toe",
+    "dev:mancala": "WIDGET=mancala vite",
+    "build": "npm run build:chess && npm run build:checkers && npm run build:blackjack && npm run build:rpg-dice && npm run build:sea-battle && npm run build:slot && npm run build:four-in-a-row && npm run build:tic-tac-toe && npm run build:mancala",
     "build:chess": "WIDGET=chess vite build",
     "build:checkers": "WIDGET=checkers vite build",
     "build:blackjack": "WIDGET=blackjack vite build",
@@ -22,6 +23,7 @@
     "build:slot": "WIDGET=slot vite build",
     "build:four-in-a-row": "WIDGET=four-in-a-row vite build",
     "build:tic-tac-toe": "WIDGET=tic-tac-toe vite build",
+    "build:mancala": "WIDGET=mancala vite build",
     "preview": "vite preview"
   },
   "dependencies": {

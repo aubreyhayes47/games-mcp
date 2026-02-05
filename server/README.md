@@ -28,6 +28,7 @@ npm run build:sea-battle
 npm run build:slot
 npm run build:four-in-a-row
 npm run build:tic-tac-toe
+npm run build:mancala
 ```
 
 The server reads `web/widgets/<game>/dist/widget.js` and
@@ -248,6 +249,34 @@ auto-renders widget output from `new_*` and `apply_*` tool responses.
 // choose_tic_tac_toe_opponent_move
 {
   "state": "G:.../.X./...|T:opponent|ST:in_progress|LA:B2|W:-|P:X|O:O"
+}
+```
+
+```json
+// new_mancala_game
+{}
+```
+
+```json
+// legal_mancala_moves
+{
+  "state": "P:4,4,4,4,4,4|O:4,4,4,4,4,4|PS:0|OS:0|T:player|ST:in_progress|LA:-|W:-"
+}
+```
+
+```json
+// apply_mancala_move
+{
+  "gameId": "g_example",
+  "state": "P:4,4,4,4,4,4|O:4,4,4,4,4,4|PS:0|OS:0|T:player|ST:in_progress|LA:-|W:-",
+  "pit": 3
+}
+```
+
+```json
+// choose_mancala_opponent_move
+{
+  "state": "P:4,4,0,5,5,5|O:4,4,4,4,4,4|PS:1|OS:0|T:opponent|ST:in_progress|LA:pit3|W:-"
 }
 ```
 

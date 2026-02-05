@@ -711,3 +711,101 @@ If illegal:
   "total": 20
 }
 ```
+
+## Mancala
+
+### Mancala state format
+
+```
+P:<p1,p2,p3,p4,p5,p6>|O:<o1,o2,o3,o4,o5,o6>|PS:<player_store>|OS:<opponent_store>|T:<turn>|ST:<status>|LA:<last_action>|W:<winner>
+```
+
+`T` is `player` or `opponent`. `ST` is `in_progress` or `game_over`.
+`W` is `player`, `opponent`, `draw`, or `-`.
+
+### Tool: `new_mancala_game`
+
+**Output (structuredContent)**
+
+```json
+{
+  "type": "mancala_snapshot",
+  "gameType": "mancala",
+  "gameId": "g_123",
+  "state": "<STATE>",
+  "status": "in_progress",
+  "turn": "player"
+}
+```
+
+### Tool: `apply_mancala_move`
+
+**Input**
+
+* `gameId`
+* `state`
+* `pit` (integer): `1` through `6`
+
+**Output (structuredContent)**
+
+```json
+{
+  "type": "mancala_snapshot",
+  "gameType": "mancala",
+  "gameId": "g_123",
+  "legal": true,
+  "state": "<NEW_STATE>",
+  "status": "in_progress",
+  "turn": "opponent",
+  "lastAction": "pit3"
+}
+```
+
+If illegal:
+
+```json
+{
+  "type": "mancala_snapshot",
+  "gameType": "mancala",
+  "gameId": "g_123",
+  "legal": false,
+  "state": "<UNCHANGED_STATE>",
+  "error": "Illegal move."
+}
+```
+
+### Tool: `legal_mancala_moves` (read-only)
+
+**Input**
+
+* `state`
+
+**Output (structuredContent)**
+
+```json
+{
+  "type": "legal_moves",
+  "gameType": "mancala",
+  "moves": [1, 2, 3, 4, 5, 6]
+}
+```
+
+### Tool: `choose_mancala_opponent_move`
+
+**Input**
+
+* `state`
+
+**Output (structuredContent)**
+
+```json
+{
+  "type": "opponent_choice",
+  "gameType": "mancala",
+  "moves": [1, 3, 5],
+  "policy": {
+    "mustChooseFromMoves": true,
+    "chooseExactlyOne": true
+  }
+}
+```

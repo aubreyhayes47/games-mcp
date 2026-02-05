@@ -22,6 +22,7 @@ SEA_BATTLE_WIDGET_VERSION = "v1"
 SLOT_WIDGET_VERSION = "v1"
 FOUR_IN_A_ROW_WIDGET_VERSION = "v1"
 TIC_TAC_TOE_WIDGET_VERSION = "v1"
+MANCALA_WIDGET_VERSION = "v1"
 CHESS_WIDGET_URI = f"ui://widget/chess-board-{CHESS_WIDGET_VERSION}.html"
 CHECKERS_WIDGET_URI = f"ui://widget/checkers-board-{CHECKERS_WIDGET_VERSION}.html"
 BLACKJACK_WIDGET_URI = f"ui://widget/blackjack-board-{BLACKJACK_WIDGET_VERSION}.html"
@@ -32,6 +33,7 @@ FOUR_IN_A_ROW_WIDGET_URI = (
     f"ui://widget/four-in-a-row-{FOUR_IN_A_ROW_WIDGET_VERSION}.html"
 )
 TIC_TAC_TOE_WIDGET_URI = f"ui://widget/tic-tac-toe-{TIC_TAC_TOE_WIDGET_VERSION}.html"
+MANCALA_WIDGET_URI = f"ui://widget/mancala-board-{MANCALA_WIDGET_VERSION}.html"
 WIDGET_MIME_TYPE = "text/html+skybridge"
 WIDGET_DOMAIN = os.getenv("WIDGET_DOMAIN", "https://chess-mcp.example.com")
 MCP_SERVER_ORIGIN = os.getenv("MCP_SERVER_ORIGIN")
@@ -92,6 +94,11 @@ TIC_TAC_TOE_WIDGET_TEMPLATE_PATH = (
     / "templates"
     / f"tic-tac-toe-{TIC_TAC_TOE_WIDGET_VERSION}.html"
 )
+MANCALA_WIDGET_TEMPLATE_PATH = (
+    Path(__file__).resolve().parent
+    / "templates"
+    / f"mancala-board-{MANCALA_WIDGET_VERSION}.html"
+)
 
 CHESS_WIDGET_JS_PATH = CHESS_WIDGET_BUILD_DIR / "widget.js"
 CHESS_WIDGET_CSS_PATH = CHESS_WIDGET_BUILD_DIR / "widget.css"
@@ -115,6 +122,9 @@ FOUR_IN_A_ROW_WIDGET_CSS_PATH = FOUR_IN_A_ROW_WIDGET_BUILD_DIR / "widget.css"
 TIC_TAC_TOE_WIDGET_BUILD_DIR = WIDGET_BUILD_ROOT / "tic-tac-toe" / "dist"
 TIC_TAC_TOE_WIDGET_JS_PATH = TIC_TAC_TOE_WIDGET_BUILD_DIR / "widget.js"
 TIC_TAC_TOE_WIDGET_CSS_PATH = TIC_TAC_TOE_WIDGET_BUILD_DIR / "widget.css"
+MANCALA_WIDGET_BUILD_DIR = WIDGET_BUILD_ROOT / "mancala" / "dist"
+MANCALA_WIDGET_JS_PATH = MANCALA_WIDGET_BUILD_DIR / "widget.js"
+MANCALA_WIDGET_CSS_PATH = MANCALA_WIDGET_BUILD_DIR / "widget.css"
 
 app = FastMCP("games-mcp")
 register_tools(app)
@@ -216,6 +226,15 @@ def tic_tac_toe_widget_template() -> str:
     )
 
 
+@app.resource(MANCALA_WIDGET_URI, mime_type=WIDGET_MIME_TYPE)
+def mancala_widget_template() -> str:
+    return load_widget_template(
+        MANCALA_WIDGET_TEMPLATE_PATH,
+        MANCALA_WIDGET_JS_PATH,
+        MANCALA_WIDGET_CSS_PATH,
+    )
+
+
 @app._mcp_server.read_resource()
 async def read_resource(uri: str):
     resource = await app._resource_manager.get_resource(uri)
@@ -233,6 +252,7 @@ async def read_resource(uri: str):
         SLOT_WIDGET_URI,
         FOUR_IN_A_ROW_WIDGET_URI,
         TIC_TAC_TOE_WIDGET_URI,
+        MANCALA_WIDGET_URI,
     }:
         meta = {
             "openai/widgetDomain": WIDGET_DOMAIN,
