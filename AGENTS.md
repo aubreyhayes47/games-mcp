@@ -237,7 +237,7 @@ Rows use `w`/`W` for white man/king, `b`/`B` for black man/king, and `.` for emp
 ### Blackjack state format
 
 ```
-P:<hand1;hand2>|D:<dealer_visible>|BK:<stack>|B:<bet>|T:<turn>|H:<hand_index>|ST:<status>|LA:<last_action>|R:<results>|X:<opaque_state_token>
+S:<shoe>|P:<hand1;hand2>|D:<dealer>|BK:<stack>|B:<bet>|T:<turn>|H:<hand_index>|ST:<status>|LA:<last_action>|R:<results>
 ```
 
 Hands are encoded as `cards@state@doubled@bet`, for example:
@@ -245,12 +245,6 @@ Hands are encoded as `cards@state@doubled@bet`, for example:
 ```
 P:AS,8D@active@0@10;7C,7H@active@0@10
 ```
-
-`D` contains only the dealer up card while `T:player` and `ST:in_progress`, and
-contains the full dealer hand once dealer turn starts or the game is over.
-
-`X` is a required encrypted token that carries canonical blackjack state. Tool
-calls must pass `X` unchanged between calls.
 
 ### Tool: `new_blackjack_game`
 

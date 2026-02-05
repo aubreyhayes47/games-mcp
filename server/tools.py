@@ -19,7 +19,6 @@ try:
         parse_state as parse_blackjack_state,
         serialize_state as serialize_blackjack_state,
     )
-    from .blackjack_state_codec import decode_public_state, encode_public_state
     from .rpg_dice_rules import roll_dice
     from .sea_battle_rules import (
         apply_sea_battle_move as apply_sea_battle_move_rule,
@@ -68,7 +67,6 @@ except ImportError:  # pragma: no cover - fallback for script execution
         parse_state as parse_blackjack_state,
         serialize_state as serialize_blackjack_state,
     )
-    from blackjack_state_codec import decode_public_state, encode_public_state
     from rpg_dice_rules import roll_dice
     from sea_battle_rules import (
         apply_sea_battle_move as apply_sea_battle_move_rule,
@@ -403,7 +401,7 @@ def register_tools(app: FastMCP) -> None:
             "type": "blackjack_snapshot",
             "gameType": "blackjack",
             "gameId": game_id,
-            "state": encode_public_state(serialize_blackjack_state(state)),
+            "state": serialize_blackjack_state(state),
             "status": state.status,
             "turn": state.turn,
             "lastAction": state.last_action,
@@ -426,27 +424,14 @@ def register_tools(app: FastMCP) -> None:
         },
     )
     def apply_blackjack_action(gameId: str, state: str, action: str) -> ToolResult:  # noqa: N803
-        try:
-            canonical_state = decode_public_state(state)
-        except ValueError as exc:
-            payload = {
-                "type": "blackjack_snapshot",
-                "gameType": "blackjack",
-                "gameId": gameId,
-                "legal": False,
-                "state": state,
-                "error": str(exc),
-            }
-            return ToolResult(content=[], structured_content=payload)
-
-        result = apply_blackjack_action_rule(canonical_state, action)
+        result = apply_blackjack_action_rule(state, action)
         if not result["legal"]:
             payload = {
                 "type": "blackjack_snapshot",
                 "gameType": "blackjack",
                 "gameId": gameId,
                 "legal": False,
-                "state": state,
+                "state": result["state"],
                 "error": result.get("error") or "Illegal action.",
             }
             return ToolResult(content=[], structured_content=payload)
@@ -456,7 +441,7 @@ def register_tools(app: FastMCP) -> None:
             "gameType": "blackjack",
             "gameId": gameId,
             "legal": True,
-            "state": encode_public_state(result["state"]),
+            "state": result["state"],
             "status": result["status"],
             "turn": result["turn"],
             "lastAction": result.get("lastAction"),
@@ -480,8 +465,7 @@ def register_tools(app: FastMCP) -> None:
         turn = "player"
         hand_index = 0
         try:
-            canonical_state = decode_public_state(state)
-            parsed = parse_blackjack_state(canonical_state)
+            parsed = parse_blackjack_state(state)
             actions = legal_player_actions(parsed)
             turn = parsed.turn
             hand_index = parsed.hand_index
@@ -508,20 +492,17 @@ def register_tools(app: FastMCP) -> None:
         actions: list[str] = []
         content = []
         try:
-            canonical_state = decode_public_state(state)
-            parsed = parse_blackjack_state(canonical_state)
+            parsed = parse_blackjack_state(state)
             actions = legal_dealer_actions(parsed)
-        except ValueError as exc:
+        except ValueError:
             actions = []
-            content = [{"type": "text", "text": str(exc)}]
         if not actions:
-            if not content:
-                content = [
-                    {
-                        "type": "text",
-                        "text": "No legal dealer actions available; the game is over.",
-                    }
-                ]
+            content = [
+                {
+                    "type": "text",
+                    "text": "No legal dealer actions available; the game is over.",
+                }
+            ]
         payload = {
             "type": "opponent_choice",
             "gameType": "blackjack",
