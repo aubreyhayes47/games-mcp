@@ -229,31 +229,36 @@ export default function App() {
           </div>
         ) : (
           <div className="table__layout">
-            <div className="hand-group hand-group--dealer">
+            <div className="hand-group">
               <h2>Dealer</h2>
-              <div className="cards cards--dealer">
-                {parsedState.dealer.length === 0 ? (
-                  <div className="card card--empty">-</div>
-                ) : (
-                  <>
-                    {visibleDealerCards.map((card, idx) => (
-                      <div
-                        key={`dealer-${card}-${idx}`}
-                        className={`card ${isRedSuit(card) ? "card--red" : ""}`}
-                      >
-                        <span>{cardLabel(card)}</span>
-                      </div>
-                    ))}
-                    {hideDealerHoleCard ? (
-                      <div className="card card--hidden" aria-label="Hidden card" />
-                    ) : null}
-                  </>
-                )}
-              </div>
-              <div className="hand-meta">
-                <span>
-                  Dealer Total: {hideDealerHoleCard ? "?" : handValue(parsedState.dealer)}
-                </span>
+              <div className="player-hands">
+                <article className="player-hand">
+                  <p className="player-hand__label">Hand 1</p>
+                  <div className="cards">
+                    {parsedState.dealer.length === 0 ? (
+                      <div className="card card--empty">-</div>
+                    ) : (
+                      <>
+                        {visibleDealerCards.map((card, idx) => (
+                          <div
+                            key={`dealer-${card}-${idx}`}
+                            className={`card ${isRedSuit(card) ? "card--red" : ""}`}
+                          >
+                            <span>{cardLabel(card)}</span>
+                          </div>
+                        ))}
+                        {hideDealerHoleCard ? (
+                          <div className="card card--hidden" aria-label="Hidden card" />
+                        ) : null}
+                      </>
+                    )}
+                  </div>
+                  <div className="hand-meta">
+                    <span>
+                      Total: {hideDealerHoleCard ? "?" : handValue(parsedState.dealer)}
+                    </span>
+                  </div>
+                </article>
               </div>
             </div>
 

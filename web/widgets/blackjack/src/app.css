@@ -126,11 +126,6 @@ h1 {
   background: rgba(4, 24, 14, 0.2);
 }
 
-.hand-group--dealer {
-  border-top-left-radius: 70px;
-  border-top-right-radius: 70px;
-}
-
 .hand-group h2 {
   margin: 0 0 10px;
   color: #faeebf;
@@ -144,10 +139,6 @@ h1 {
   flex-wrap: wrap;
   gap: 8px;
   min-height: 72px;
-}
-
-.cards--dealer {
-  justify-content: center;
 }
 
 .card {
