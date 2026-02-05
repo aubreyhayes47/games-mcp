@@ -510,6 +510,8 @@ def register_tools(app: FastMCP) -> None:
             "policy": {
                 "mustChooseFromActions": True,
                 "chooseExactlyOne": True,
+                "mustNotRevealDealerHoleCardInChat": True,
+                "dealerHoleCardVisibility": "hidden_until_dealer_turn_or_game_over",
             },
         }
         return ToolResult(content=content, structured_content=payload)

@@ -298,7 +298,9 @@ If illegal:
   "actions": ["hit", "stand"],
   "policy": {
     "mustChooseFromActions": true,
-    "chooseExactlyOne": true
+    "chooseExactlyOne": true,
+    "mustNotRevealDealerHoleCardInChat": true,
+    "dealerHoleCardVisibility": "hidden_until_dealer_turn_or_game_over"
   }
 }
 ```

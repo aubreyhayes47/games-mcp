@@ -35,14 +35,21 @@ const parseState = (state) => {
       playerBoard: Array.from({ length: 10 }, () => Array(10).fill(".")),
       opponentBoard: Array.from({ length: 10 }, () => Array(10).fill(".")),
       fogBoard: Array.from({ length: 10 }, () => Array(10).fill(".")),
+      opponentFog: Array.from({ length: 10 }, () => Array(10).fill(".")),
       turn: "player",
       status: "in_progress",
       lastAction: "-",
       winner: "-",
     };
   }
+
   const parts = state.split("|").reduce((acc, chunk) => {
-    const [key, value] = chunk.split(":");
+    const separator = chunk.indexOf(":");
+    if (separator === -1) {
+      return acc;
+    }
+    const key = chunk.slice(0, separator);
+    const value = chunk.slice(separator + 1);
     acc[key] = value;
     return acc;
   }, {});
@@ -51,30 +58,12 @@ const parseState = (state) => {
     playerBoard: parseBoard(parts.P),
     opponentBoard: parseBoard(parts.O),
     fogBoard: parseBoard(parts.F),
+    opponentFog: parseBoard(parts.OF),
     turn: parts.T || "player",
     status: parts.ST || "in_progress",
     lastAction: parts.LA || "-",
     winner: parts.W || "-",
   };
-};
-
-const cellClass = (value, showShips, neighbors) => {
-  if (value === "H") return "cell cell--hit";
-  if (value === "M") return "cell cell--miss";
-  if (value === "S" && showShips) {
-    const { up, down, left, right } = neighbors || {};
-    const shipNeighbors = [up, down, left, right].filter(Boolean).length;
-    const classes = ["cell", "cell--ship"];
-    if (shipNeighbors <= 1) {
-      classes.push("cell--ship-end");
-      if (up) classes.push("cell--ship-cap-top");
-      if (down) classes.push("cell--ship-cap-bottom");
-      if (left) classes.push("cell--ship-cap-left");
-      if (right) classes.push("cell--ship-cap-right");
-    }
-    return classes.join(" ");
-  }
-  return "cell";
 };
 
 const getShipNeighbors = (board, rowIndex, colIndex) => {
@@ -84,6 +73,76 @@ const getShipNeighbors = (board, rowIndex, colIndex) => {
   const right = colIndex < 9 && board[rowIndex][colIndex + 1] === "S";
   return { up, down, left, right };
 };
+
+const cellClass = (value, showShips, neighbors) => {
+  if (value === "H") return "cell cell--hit";
+  if (value === "M") return "cell cell--miss";
+
+  if (value === "S" && showShips) {
+    const { up, down, left, right } = neighbors || {};
+    const shipNeighbors = [up, down, left, right].filter(Boolean).length;
+    const classes = ["cell", "cell--ship"];
+
+    if (shipNeighbors <= 1) {
+      classes.push("cell--ship-end");
+      if (up) classes.push("cell--ship-cap-top");
+      if (down) classes.push("cell--ship-cap-bottom");
+      if (left) classes.push("cell--ship-cap-left");
+      if (right) classes.push("cell--ship-cap-right");
+    }
+
+    return classes.join(" ");
+  }
+
+  return "cell";
+};
+
+const countCells = (board, target) =>
+  board.reduce(
+    (sum, row) => sum + row.reduce((rowSum, cell) => rowSum + (cell === target ? 1 : 0), 0),
+    0
+  );
+
+function GridBoard({ board, showShips, title, ariaLabel }) {
+  return (
+    <div className="board-panel">
+      <h2>{title}</h2>
+      <div className="board-shell" role="grid" aria-label={ariaLabel}>
+        <div className="axis axis--top" aria-hidden="true">
+          {FILES.map((file) => (
+            <span key={`${title}-file-${file}`}>{file}</span>
+          ))}
+        </div>
+
+        <div className="board-grid">
+          {board.map((row, rowIndex) => (
+            <div key={`${title}-row-${rowIndex}`} className="board-row">
+              <span className="axis-rank" aria-hidden="true">
+                {RANKS[rowIndex]}
+              </span>
+
+              {row.map((cell, colIndex) => (
+                <div
+                  key={`${title}-${rowIndex}-${colIndex}`}
+                  className={cellClass(
+                    cell,
+                    showShips,
+                    showShips ? getShipNeighbors(board, rowIndex, colIndex) : null
+                  )}
+                  role="gridcell"
+                  aria-label={`${ariaLabel} ${FILES[colIndex]}${RANKS[rowIndex]}`}
+                >
+                  {cell === "H" ? <span className="marker">X</span> : null}
+                  {cell === "M" ? <span className="marker marker--miss">•</span> : null}
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function App() {
   const toolOutput = useOpenAiGlobal("toolOutput");
@@ -104,8 +163,10 @@ export default function App() {
       // eslint-disable-next-line no-console
       console.error("Widget unhandled rejection:", reason || event);
     };
+
     window.addEventListener("error", handleError);
     window.addEventListener("unhandledrejection", handleRejection);
+
     return () => {
       window.removeEventListener("error", handleError);
       window.removeEventListener("unhandledrejection", handleRejection);
@@ -117,83 +178,74 @@ export default function App() {
     [snapshot?.state]
   );
 
+  const playerFleetRemaining = countCells(parsedState.playerBoard, "S");
+  const enemyHitsOnPlayer = countCells(parsedState.opponentFog, "H");
+  const playerHitsOnEnemy = countCells(parsedState.fogBoard, "H");
+
   return (
     <main className="app">
       <header className="app__header">
         <div>
-          <h1>Sea Battle MCP</h1>
+          <p className="eyebrow">Naval Command Display</p>
+          <h1>Sea Battle</h1>
           <p className="app__subtitle">
-            Type a coordinate like A1 or J10. The boards update only from tool
-            output.
+            Type coordinates like A1 or J10 in chat. Boards only update from tool output.
           </p>
         </div>
       </header>
 
-      <section className="status">
-        <div>
-          <strong>Status:</strong> {parsedState.status}
+      <section className="status" aria-label="Battle status">
+        <div className="status-card">
+          <span>Status</span>
+          <strong>{parsedState.status}</strong>
         </div>
-        <div>
-          <strong>Turn:</strong> {parsedState.turn}
+        <div className="status-card">
+          <span>Turn</span>
+          <strong>{parsedState.turn}</strong>
         </div>
-        <div>
-          <strong>Last:</strong> {parsedState.lastAction}
+        <div className="status-card">
+          <span>Last Action</span>
+          <strong>{parsedState.lastAction}</strong>
         </div>
-        <div>
-          <strong>Winner:</strong> {parsedState.winner || "-"}
+        <div className="status-card">
+          <span>Winner</span>
+          <strong>{parsedState.winner || "-"}</strong>
         </div>
+      </section>
+
+      <section className="telemetry" aria-label="Battle telemetry">
+        <div className="telemetry-item">Your Fleet Tiles Remaining: {playerFleetRemaining}</div>
+        <div className="telemetry-item">Hits Landed: {playerHitsOnEnemy}</div>
+        <div className="telemetry-item">Enemy Hits Landed: {enemyHitsOnPlayer}</div>
       </section>
 
       <section className="boards">
         {isWaitingForTool ? (
-          <div className="board board--waiting" role="status">
+          <div className="board-panel board-panel--waiting" role="status">
             <p>Waiting for the next tool update...</p>
           </div>
         ) : (
           <>
-            <div className="board-wrapper">
-              <h2>Player Fleet</h2>
-              <div className="board" role="grid" aria-label="Player board">
-                {parsedState.playerBoard.map((row, rowIndex) =>
-                  row.map((cell, colIndex) => (
-                    <div
-                      key={`p-${rowIndex}-${colIndex}`}
-                      className={cellClass(
-                        cell,
-                        true,
-                        getShipNeighbors(parsedState.playerBoard, rowIndex, colIndex)
-                      )}
-                      role="gridcell"
-                      aria-label={`Player ${FILES[colIndex]}${RANKS[rowIndex]}`}
-                    />
-                  ))
-                )}
-              </div>
-            </div>
-            <div className="board-wrapper">
-              <h2>Opponent Waters</h2>
-              <div className="board" role="grid" aria-label="Opponent board">
-                {parsedState.fogBoard.map((row, rowIndex) =>
-                  row.map((cell, colIndex) => (
-                    <div
-                      key={`o-${rowIndex}-${colIndex}`}
-                      className={cellClass(cell, false)}
-                      role="gridcell"
-                      aria-label={`Opponent ${FILES[colIndex]}${RANKS[rowIndex]}`}
-                    />
-                  ))
-                )}
-              </div>
-            </div>
+            <GridBoard
+              board={parsedState.playerBoard}
+              showShips={true}
+              title="Player Fleet"
+              ariaLabel="Player board"
+            />
+            <GridBoard
+              board={parsedState.fogBoard}
+              showShips={false}
+              title="Opponent Waters"
+              ariaLabel="Opponent board"
+            />
           </>
         )}
       </section>
 
-      <section className="board-meta">
-        <span>Coordinates: A1–J10. Hits and misses are tracked for both sides.</span>
-        <p className="board-note">
-          The opponent move is selected from a legal list by the model.
-        </p>
+      <section className="legend" aria-label="Legend">
+        <div><span className="dot dot--ship" /> Ship</div>
+        <div><span className="dot dot--hit" /> Hit</div>
+        <div><span className="dot dot--miss" /> Miss</div>
       </section>
     </main>
   );

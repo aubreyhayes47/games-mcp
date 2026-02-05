@@ -42,7 +42,12 @@ const parseState = (state) => {
     };
   }
   const parts = state.split("|").reduce((acc, chunk) => {
-    const [key, value] = chunk.split(":");
+    const separator = chunk.indexOf(":");
+    if (separator === -1) {
+      return acc;
+    }
+    const key = chunk.slice(0, separator);
+    const value = chunk.slice(separator + 1);
     acc[key] = value;
     return acc;
   }, {});
@@ -137,6 +142,13 @@ const handValue = (cards) => {
   return total;
 };
 
+const formatChips = (amount) => {
+  if (Number.isNaN(amount)) {
+    return "0";
+  }
+  return Number(amount).toFixed(0);
+};
+
 export default function App() {
   const toolOutput = useOpenAiGlobal("toolOutput");
   const latestPayload = normalizeToolOutput(toolOutput);
@@ -178,29 +190,35 @@ export default function App() {
     <main className="app">
       <header className="app__header">
         <div>
-          <h1>Blackjack MCP</h1>
+          <p className="eyebrow">Display-only table</p>
+          <h1>Blackjack</h1>
           <p className="app__subtitle">
-            Type your action in chat. The table updates only from verified tool
-            results.
+            Type actions in chat. The table updates only from validated tool output.
           </p>
         </div>
+        <div className="table-chip">Actions: hit, stand, double, split</div>
       </header>
 
-      <section className="status">
-        <div>
-          <strong>Status:</strong> {getStatusLabel(snapshot)}
+      <section className="status" aria-label="Game status">
+        <div className="stat-pill">
+          <span>Status</span>
+          <strong>{getStatusLabel(snapshot)}</strong>
         </div>
-        <div>
-          <strong>Turn:</strong> {snapshot?.turn || "-"}
+        <div className="stat-pill">
+          <span>Turn</span>
+          <strong>{snapshot?.turn || "-"}</strong>
         </div>
-        <div>
-          <strong>Stack:</strong> {parsedState.stack}
+        <div className="stat-pill">
+          <span>Stack</span>
+          <strong>{formatChips(parsedState.stack)}</strong>
         </div>
-        <div>
-          <strong>Bet:</strong> {parsedState.bet}
+        <div className="stat-pill">
+          <span>Table Bet</span>
+          <strong>{formatChips(parsedState.bet)}</strong>
         </div>
-        <div>
-          <strong>Last action:</strong> {snapshot?.lastAction || "-"}
+        <div className="stat-pill">
+          <span>Last Action</span>
+          <strong>{snapshot?.lastAction || "-"}</strong>
         </div>
       </section>
 
@@ -211,9 +229,9 @@ export default function App() {
           </div>
         ) : (
           <div className="table__layout">
-            <div className="hand-group">
+            <div className="hand-group hand-group--dealer">
               <h2>Dealer</h2>
-              <div className="cards">
+              <div className="cards cards--dealer">
                 {parsedState.dealer.length === 0 ? (
                   <div className="card card--empty">-</div>
                 ) : (
@@ -234,12 +252,12 @@ export default function App() {
               </div>
               <div className="hand-meta">
                 <span>
-                  Total: {hideDealerHoleCard ? "?" : handValue(parsedState.dealer)}
+                  Dealer Total: {hideDealerHoleCard ? "?" : handValue(parsedState.dealer)}
                 </span>
               </div>
             </div>
 
-            <div className="hand-group">
+            <div className="hand-group hand-group--player">
               <h2>Player</h2>
               <div className="player-hands">
                 {parsedState.playerHands.length === 0 ? (
@@ -253,12 +271,13 @@ export default function App() {
                       parsedState.handIndex === index &&
                       hand.state === "active";
                     return (
-                      <div
+                      <article
                         key={`hand-${index}`}
                         className={`player-hand ${
                           isActive ? "player-hand--active" : ""
                         }`}
                       >
+                        <p className="player-hand__label">Hand {index + 1}</p>
                         <div className="cards">
                           {hand.cards.map((card, cardIndex) => (
                             <div
@@ -273,14 +292,14 @@ export default function App() {
                         </div>
                         <div className="hand-meta">
                           <span>Total: {handValue(hand.cards)}</span>
-                          <span>Bet: {hand.bet}</span>
+                          <span>Bet: {formatChips(hand.bet)}</span>
                           <span>State: {hand.state}</span>
                           <span>Doubled: {hand.doubled ? "Yes" : "No"}</span>
                           {parsedState.results?.[index] ? (
                             <span>Result: {parsedState.results[index]}</span>
                           ) : null}
                         </div>
-                      </div>
+                      </article>
                     );
                   })
                 )}
@@ -291,13 +310,9 @@ export default function App() {
       </section>
 
       <section className="table-meta">
-        <span>Actions: hit, stand, double, split.</span>
+        <span>Dealer hole card remains hidden in chat until reveal conditions are met.</span>
         <p className="table-note">
-          Splits and doubles are available when legal; insurance and surrender are
-          disabled.
-        </p>
-        <p className="table-note">
-          The dealer chooses actions only from the tool-provided list.
+          Splits and doubles are available when legal; insurance and surrender are disabled.
         </p>
       </section>
     </main>
