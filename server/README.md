@@ -123,7 +123,7 @@ auto-renders widget output from `new_*` and `apply_*` tool responses.
 ```json
 // legal_blackjack_actions
 {
-  "state": "S:<shoe>|P:AS,8D@active@0@10|D:7C,2H|BK:1000|B:10|T:player|H:0|ST:in_progress|LA:deal|R:-"
+  "state": "P:AS,8D@active@0@10|D:7C|BK:1000|B:10|T:player|H:0|ST:in_progress|LA:deal|R:-|X:<opaque_state_token>"
 }
 ```
 
@@ -131,7 +131,7 @@ auto-renders widget output from `new_*` and `apply_*` tool responses.
 // apply_blackjack_action
 {
   "gameId": "g_example",
-  "state": "S:<shoe>|P:AS,8D@active@0@10|D:7C,2H|BK:1000|B:10|T:player|H:0|ST:in_progress|LA:deal|R:-",
+  "state": "P:AS,8D@active@0@10|D:7C|BK:1000|B:10|T:player|H:0|ST:in_progress|LA:deal|R:-|X:<opaque_state_token>",
   "action": "hit"
 }
 ```
@@ -139,7 +139,7 @@ auto-renders widget output from `new_*` and `apply_*` tool responses.
 ```json
 // choose_blackjack_dealer_action
 {
-  "state": "S:<shoe>|P:AS,8D@stood@0@10|D:7C,2H|BK:1000|B:10|T:dealer|H:0|ST:in_progress|LA:stand|R:-"
+  "state": "P:AS,8D@stood@0@10|D:7C,2H|BK:1000|B:10|T:dealer|H:0|ST:in_progress|LA:stand|R:-|X:<opaque_state_token>"
 }
 ```
 
@@ -279,6 +279,13 @@ auto-renders widget output from `new_*` and `apply_*` tool responses.
   "state": "P:4,4,0,5,5,5|O:4,4,4,4,4,4|PS:1|OS:0|T:opponent|ST:in_progress|LA:pit3|W:-"
 }
 ```
+
+## Blackjack State Tokens
+
+- Blackjack tool `state` values include an opaque encrypted `X` token.
+- Callers must pass the returned `state` back unchanged on subsequent blackjack tool calls.
+- The dealer hole card is not included in visible `D` while turn is `player`.
+- For stable token decoding across restarts, set `BLACKJACK_STATE_KEY` to a Fernet key.
 
 ## Running tests
 
