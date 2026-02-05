@@ -100,10 +100,10 @@ export default function App() {
     <main className="app">
       <header className="app__header">
         <div>
-          <h1>Tic-Tac-Toe MCP</h1>
+          <h1>Tic-Tac-Toe Notebook</h1>
           <p className="app__subtitle">
-            Type a coordinate like A1, B2, or C3. The board updates only from
-            tool output.
+            Type a coordinate like A1, B2, or C3. The board updates from tool
+            output.
           </p>
         </div>
       </header>
@@ -129,30 +129,33 @@ export default function App() {
             <p>Waiting for the next tool update...</p>
           </div>
         ) : (
-          <div className="board-wrapper">
-            <div className="column-labels" aria-hidden="true">
-              {COLUMN_LABELS.map((label) => (
-                <span key={label}>{label}</span>
-              ))}
-            </div>
-            <div className="board" role="grid" aria-label="Tic-Tac-Toe board">
-              {parsedState.grid.map((row, rowIndex) =>
-                row.map((cell, colIndex) => (
-                  <div
-                    key={`cell-${rowIndex}-${colIndex}`}
-                    className={cellClass(cell)}
-                    role="gridcell"
-                    aria-label={`${COLUMN_LABELS[colIndex]}${ROW_LABELS[rowIndex]}`}
-                  >
-                    <span>{cell !== "." ? cell : ""}</span>
-                  </div>
-                ))
-              )}
-            </div>
-            <div className="row-labels" aria-hidden="true">
-              {ROW_LABELS.map((label) => (
-                <span key={label}>{label}</span>
-              ))}
+          <div className="board-sheet">
+            <div className="board-wrapper">
+              <span className="axis-corner" aria-hidden="true" />
+              <div className="column-labels" aria-hidden="true">
+                {COLUMN_LABELS.map((label) => (
+                  <span key={label}>{label}</span>
+                ))}
+              </div>
+              <div className="row-labels" aria-hidden="true">
+                {ROW_LABELS.map((label) => (
+                  <span key={label}>{label}</span>
+                ))}
+              </div>
+              <div className="board" role="grid" aria-label="Tic-Tac-Toe board">
+                {parsedState.grid.map((row, rowIndex) =>
+                  row.map((cell, colIndex) => (
+                    <div
+                      key={`cell-${rowIndex}-${colIndex}`}
+                      className={cellClass(cell)}
+                      role="gridcell"
+                      aria-label={`${COLUMN_LABELS[colIndex]}${ROW_LABELS[rowIndex]}`}
+                    >
+                      <span>{cell !== "." ? cell : ""}</span>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           </div>
         )}
