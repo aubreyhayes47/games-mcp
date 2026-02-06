@@ -136,13 +136,16 @@ def register_tools(app: FastMCP) -> None:
 
     @app.tool(
         name="new_chess_game",
-        description="Start a new chess game for chat-driven play.",
+        description="Start a new chess game for chat-driven play (white always moves first).",
         meta=_tool_meta(output_template_uri=CHESS_WIDGET_TEMPLATE_URI),
+        annotations={
+            "readOnlyHint": False,
+            "openWorldHint": False,
+            "destructiveHint": False,
+        },
     )
-    def new_chess_game(side: Literal["white", "black"] | None = None) -> ToolResult:
+    def new_chess_game() -> ToolResult:
         board = chess.Board()
-        if side == "black":
-            board.turn = chess.BLACK
         game_id = f"g_{uuid.uuid4().hex}"
         payload = {
             "type": "chess_snapshot",
@@ -150,7 +153,7 @@ def register_tools(app: FastMCP) -> None:
             "gameId": game_id,
             "fen": board.fen(),
             "status": "in_progress",
-            "turn": "w" if board.turn == chess.WHITE else "b",
+            "turn": "w",
         }
         return ToolResult(content=[], structured_content=payload)
 
@@ -215,6 +218,7 @@ def register_tools(app: FastMCP) -> None:
             "model-driven opponent turn loop."
         ),
         meta=_tool_meta(),
+        annotations={"readOnlyHint": True},
     )
     def choose_chess_opponent_move(fen: str) -> ToolResult:
         moves = opponent_move_candidates(fen, limit=OPPONENT_MOVE_CAP)
@@ -240,6 +244,11 @@ def register_tools(app: FastMCP) -> None:
         name="new_checkers_game",
         description="Start a new checkers game for chat-driven play.",
         meta=_tool_meta(output_template_uri=CHECKERS_WIDGET_TEMPLATE_URI),
+        annotations={
+            "readOnlyHint": False,
+            "openWorldHint": False,
+            "destructiveHint": False,
+        },
     )
     def new_checkers_game() -> ToolResult:
         game_id = f"g_{uuid.uuid4().hex}"
@@ -324,6 +333,7 @@ def register_tools(app: FastMCP) -> None:
             "checkers opponent turn loop."
         ),
         meta=_tool_meta(),
+        annotations={"readOnlyHint": True},
     )
     def choose_checkers_opponent_move(state: str) -> ToolResult:
         moves = checkers_opponent_move_candidates(state, limit=OPPONENT_MOVE_CAP)
@@ -350,6 +360,11 @@ def register_tools(app: FastMCP) -> None:
         name="new_blackjack_game",
         description="Start a new blackjack game for chat-driven play.",
         meta=_tool_meta(output_template_uri=BLACKJACK_WIDGET_TEMPLATE_URI),
+        annotations={
+            "readOnlyHint": False,
+            "openWorldHint": False,
+            "destructiveHint": False,
+        },
     )
     def new_blackjack_game(
         stack: int | float | None = None,
@@ -487,6 +502,7 @@ def register_tools(app: FastMCP) -> None:
             "model-driven dealer turn loop."
         ),
         meta=_tool_meta(),
+        annotations={"readOnlyHint": True},
     )
     def choose_blackjack_dealer_action(state: str) -> ToolResult:
         actions: list[str] = []
@@ -557,6 +573,11 @@ def register_tools(app: FastMCP) -> None:
         name="new_sea_battle_game",
         description="Start a new Sea Battle game for chat-driven play.",
         meta=_tool_meta(output_template_uri=SEA_BATTLE_WIDGET_TEMPLATE_URI),
+        annotations={
+            "readOnlyHint": False,
+            "openWorldHint": False,
+            "destructiveHint": False,
+        },
     )
     def new_sea_battle_game() -> ToolResult:
         game_id = f"g_{uuid.uuid4().hex}"
@@ -635,6 +656,7 @@ def register_tools(app: FastMCP) -> None:
             "Sea Battle opponent turn loop."
         ),
         meta=_tool_meta(),
+        annotations={"readOnlyHint": True},
     )
     def choose_sea_battle_opponent_move(state: str) -> ToolResult:
         moves = sea_battle_opponent_moves(state, limit=OPPONENT_MOVE_CAP)
@@ -661,6 +683,11 @@ def register_tools(app: FastMCP) -> None:
         name="new_slot_game",
         description="Start a new slot machine session with an optional stack and bet.",
         meta=_tool_meta(output_template_uri=SLOT_WIDGET_TEMPLATE_URI),
+        annotations={
+            "readOnlyHint": False,
+            "openWorldHint": False,
+            "destructiveHint": False,
+        },
     )
     def new_slot_game(
         stack: int | float | None = None,
@@ -733,6 +760,11 @@ def register_tools(app: FastMCP) -> None:
         name="new_four_in_a_row_game",
         description="Start a new Four-in-a-Row game for chat-driven play.",
         meta=_tool_meta(output_template_uri=FOUR_IN_A_ROW_WIDGET_TEMPLATE_URI),
+        annotations={
+            "readOnlyHint": False,
+            "openWorldHint": False,
+            "destructiveHint": False,
+        },
     )
     def new_four_in_a_row_game() -> ToolResult:
         game_id = f"g_{uuid.uuid4().hex}"
@@ -815,6 +847,7 @@ def register_tools(app: FastMCP) -> None:
             "Four-in-a-Row opponent turn loop."
         ),
         meta=_tool_meta(),
+        annotations={"readOnlyHint": True},
     )
     def choose_four_in_a_row_opponent_move(state: str) -> ToolResult:
         moves = four_in_a_row_opponent_moves(state, limit=OPPONENT_MOVE_CAP)
@@ -841,6 +874,11 @@ def register_tools(app: FastMCP) -> None:
         name="new_tic_tac_toe_game",
         description="Start a new Tic-Tac-Toe game for chat-driven play.",
         meta=_tool_meta(output_template_uri=TIC_TAC_TOE_WIDGET_TEMPLATE_URI),
+        annotations={
+            "readOnlyHint": False,
+            "openWorldHint": False,
+            "destructiveHint": False,
+        },
     )
     def new_tic_tac_toe_game(side: Literal["X", "O"] | None = None) -> ToolResult:
         game_id = f"g_{uuid.uuid4().hex}"
@@ -935,6 +973,7 @@ def register_tools(app: FastMCP) -> None:
             "Tic-Tac-Toe opponent turn loop."
         ),
         meta=_tool_meta(),
+        annotations={"readOnlyHint": True},
     )
     def choose_tic_tac_toe_opponent_move(state: str) -> ToolResult:
         moves = tic_tac_toe_opponent_moves(state, limit=OPPONENT_MOVE_CAP)
@@ -961,6 +1000,11 @@ def register_tools(app: FastMCP) -> None:
         name="new_mancala_game",
         description="Start a new Mancala (Kalah) game for chat-driven play.",
         meta=_tool_meta(output_template_uri=MANCALA_WIDGET_TEMPLATE_URI),
+        annotations={
+            "readOnlyHint": False,
+            "openWorldHint": False,
+            "destructiveHint": False,
+        },
     )
     def new_mancala_game() -> ToolResult:
         game_id = f"g_{uuid.uuid4().hex}"
@@ -1043,6 +1087,7 @@ def register_tools(app: FastMCP) -> None:
             "Mancala opponent turn loop."
         ),
         meta=_tool_meta(),
+        annotations={"readOnlyHint": True},
     )
     def choose_mancala_opponent_move(state: str) -> ToolResult:
         moves = mancala_opponent_moves(state, limit=OPPONENT_MOVE_CAP)

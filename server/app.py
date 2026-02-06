@@ -257,6 +257,10 @@ async def read_resource(uri: str):
         meta = {
             "openai/widgetDomain": WIDGET_DOMAIN,
             "openai/widgetCSP": WIDGET_CSP,
+            "openai/widgetDescription": (
+                "Displays the current game snapshot from tool output; users type moves in chat."
+            ),
+            "openai/widgetPrefersBorder": True,
         }
 
     return [
