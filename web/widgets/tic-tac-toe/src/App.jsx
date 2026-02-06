@@ -1,19 +1,11 @@
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import "./app.css";
-import { useOpenAiGlobal } from "./hooks/useOpenAiGlobal";
+import { GameWidgetShell } from "@shared/shell/GameWidgetShell";
+import { normalizeToolOutput } from "@shared/shell/normalizeToolOutput";
+import { useOpenAiGlobal } from "@shared/shell/useOpenAiGlobal";
 
 const COLUMN_LABELS = ["A", "B", "C"];
 const ROW_LABELS = ["1", "2", "3"];
-
-const normalizeToolOutput = (toolOutput) => {
-  if (!toolOutput) {
-    return null;
-  }
-  if (toolOutput.structuredContent) {
-    return toolOutput.structuredContent;
-  }
-  return toolOutput;
-};
 
 const isSnapshotPayload = (payload) =>
   payload?.type === "tic_tac_toe_snapshot" && typeof payload?.state === "string";
@@ -68,106 +60,64 @@ export default function App() {
   const toolOutput = useOpenAiGlobal("toolOutput");
   const latestPayload = normalizeToolOutput(toolOutput);
   const snapshot = isSnapshotPayload(latestPayload) ? latestPayload : null;
-
-  const isWaitingForTool =
-    !isSnapshotPayload(latestPayload) && latestPayload !== null;
-
-  useEffect(() => {
-    const handleError = (event) => {
-      const message = event?.error?.message || event?.message || "Unknown error";
-      // eslint-disable-next-line no-console
-      console.error("Widget runtime error:", message, event?.error || event);
-    };
-    const handleRejection = (event) => {
-      const reason = event?.reason;
-      // eslint-disable-next-line no-console
-      console.error("Widget unhandled rejection:", reason || event);
-    };
-    window.addEventListener("error", handleError);
-    window.addEventListener("unhandledrejection", handleRejection);
-    return () => {
-      window.removeEventListener("error", handleError);
-      window.removeEventListener("unhandledrejection", handleRejection);
-    };
-  }, []);
-
-  const parsedState = useMemo(
-    () => parseState(snapshot?.state),
-    [snapshot?.state]
-  );
+  const parsedState = useMemo(() => parseState(snapshot?.state), [snapshot?.state]);
+  const error = snapshot?.legal === false ? snapshot?.error : null;
 
   return (
-    <main className="app">
-      <header className="app__header">
-        <div>
-          <h1>Tic-Tac-Toe Notebook</h1>
-          <p className="app__subtitle">
-            Type a coordinate like A1, B2, or C3. The board updates from tool
-            output.
-          </p>
-        </div>
-      </header>
-
-      <section className="status">
-        <div>
-          <strong>Status:</strong> {parsedState.status}
-        </div>
-        <div>
-          <strong>Turn:</strong> {parsedState.turn}
-        </div>
-        <div>
-          <strong>Last:</strong> {parsedState.lastAction}
-        </div>
-        <div>
-          <strong>Winner:</strong> {parsedState.winner || "-"}
-        </div>
-      </section>
-
+    <GameWidgetShell
+      title="Tic-Tac-Toe Notebook"
+      subtitle="Type a coordinate like A1, B2, or C3. The board updates from tool output."
+      latestPayload={latestPayload}
+      snapshot={snapshot}
+      snapshotType="tic_tac_toe_snapshot"
+      isSessionGame={true}
+      status={snapshot?.status}
+      turn={snapshot?.turn}
+      gameId={snapshot?.gameId}
+      error={error}
+      waitingMessage="Waiting for the next tool update..."
+      statusItems={[
+        { label: "Status", value: parsedState.status },
+        { label: "Turn", value: parsedState.turn },
+        { label: "Last", value: parsedState.lastAction },
+        { label: "Winner", value: parsedState.winner || "-" },
+      ]}
+      instructions={[
+        "Coordinates are A1-C3.",
+        `Player: ${parsedState.playerSymbol} | Opponent: ${parsedState.opponentSymbol}`,
+      ]}
+    >
       <section className="board-area">
-        {isWaitingForTool ? (
-          <div className="board board--waiting" role="status">
-            <p>Waiting for the next tool update...</p>
-          </div>
-        ) : (
-          <div className="board-sheet">
-            <div className="board-wrapper">
-              <span className="axis-corner" aria-hidden="true" />
-              <div className="column-labels" aria-hidden="true">
-                {COLUMN_LABELS.map((label) => (
-                  <span key={label}>{label}</span>
-                ))}
-              </div>
-              <div className="row-labels" aria-hidden="true">
-                {ROW_LABELS.map((label) => (
-                  <span key={label}>{label}</span>
-                ))}
-              </div>
-              <div className="board" role="grid" aria-label="Tic-Tac-Toe board">
-                {parsedState.grid.map((row, rowIndex) =>
-                  row.map((cell, colIndex) => (
-                    <div
-                      key={`cell-${rowIndex}-${colIndex}`}
-                      className={cellClass(cell)}
-                      role="gridcell"
-                      aria-label={`${COLUMN_LABELS[colIndex]}${ROW_LABELS[rowIndex]}`}
-                    >
-                      <span>{cell !== "." ? cell : ""}</span>
-                    </div>
-                  ))
-                )}
-              </div>
+        <div className="board-sheet">
+          <div className="board-wrapper">
+            <span className="axis-corner" aria-hidden="true" />
+            <div className="column-labels" aria-hidden="true">
+              {COLUMN_LABELS.map((label) => (
+                <span key={label}>{label}</span>
+              ))}
+            </div>
+            <div className="row-labels" aria-hidden="true">
+              {ROW_LABELS.map((label) => (
+                <span key={label}>{label}</span>
+              ))}
+            </div>
+            <div className="board" role="grid" aria-label="Tic-Tac-Toe board">
+              {parsedState.grid.map((row, rowIndex) =>
+                row.map((cell, colIndex) => (
+                  <div
+                    key={`cell-${rowIndex}-${colIndex}`}
+                    className={cellClass(cell)}
+                    role="gridcell"
+                    aria-label={`${COLUMN_LABELS[colIndex]}${ROW_LABELS[rowIndex]}`}
+                  >
+                    <span>{cell !== "." ? cell : ""}</span>
+                  </div>
+                ))
+              )}
             </div>
           </div>
-        )}
+        </div>
       </section>
-
-      <section className="board-meta">
-        <span>Coordinates are A1–C3 with column letters and row numbers.</span>
-        <p className="board-note">
-          Player symbol: {parsedState.playerSymbol} · Opponent symbol:{" "}
-          {parsedState.opponentSymbol}
-        </p>
-      </section>
-    </main>
+    </GameWidgetShell>
   );
 }

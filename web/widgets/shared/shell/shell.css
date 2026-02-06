@@ -1,0 +1,84 @@
+.game-shell {
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: #1f2933;
+}
+
+.game-shell__header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.game-shell__title {
+  margin: 0;
+}
+
+.game-shell__subtitle {
+  margin: 4px 0 0;
+  color: #4b5563;
+}
+
+.game-shell__status {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px;
+  padding: 10px;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(31, 41, 51, 0.08);
+}
+
+.game-shell__status-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.game-shell__status-item-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  color: #6b7280;
+}
+
+.game-shell__error {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.game-shell__waiting {
+  display: grid;
+  place-items: center;
+  min-height: 140px;
+  border-radius: 8px;
+  background: #111827;
+  color: #f9fafb;
+}
+
+.game-shell__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: #4b5563;
+}
+
+.game-shell__meta p {
+  margin: 0;
+}
+
+.game-shell__sr-live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

@@ -1,19 +1,11 @@
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import "./app.css";
-import { useOpenAiGlobal } from "./hooks/useOpenAiGlobal";
+import { GameWidgetShell } from "@shared/shell/GameWidgetShell";
+import { normalizeToolOutput } from "@shared/shell/normalizeToolOutput";
+import { useOpenAiGlobal } from "@shared/shell/useOpenAiGlobal";
 
 const FILES = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"];
 const RANKS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"];
-
-const normalizeToolOutput = (toolOutput) => {
-  if (!toolOutput) {
-    return null;
-  }
-  if (toolOutput.structuredContent) {
-    return toolOutput.structuredContent;
-  }
-  return toolOutput;
-};
 
 const isSnapshotPayload = (payload) =>
   payload?.type === "sea_battle_snapshot" && typeof payload?.state === "string";
@@ -33,7 +25,6 @@ const parseState = (state) => {
   if (!state) {
     return {
       playerBoard: Array.from({ length: 10 }, () => Array(10).fill(".")),
-      opponentBoard: Array.from({ length: 10 }, () => Array(10).fill(".")),
       fogBoard: Array.from({ length: 10 }, () => Array(10).fill(".")),
       opponentFog: Array.from({ length: 10 }, () => Array(10).fill(".")),
       turn: "player",
@@ -56,7 +47,6 @@ const parseState = (state) => {
 
   return {
     playerBoard: parseBoard(parts.P),
-    opponentBoard: parseBoard(parts.O),
     fogBoard: parseBoard(parts.F),
     opponentFog: parseBoard(parts.OF),
     turn: parts.T || "player",
@@ -148,98 +138,50 @@ export default function App() {
   const toolOutput = useOpenAiGlobal("toolOutput");
   const latestPayload = normalizeToolOutput(toolOutput);
   const snapshot = isSnapshotPayload(latestPayload) ? latestPayload : null;
-
-  const isWaitingForTool =
-    !isSnapshotPayload(latestPayload) && latestPayload !== null;
-
-  useEffect(() => {
-    const handleError = (event) => {
-      const message = event?.error?.message || event?.message || "Unknown error";
-      // eslint-disable-next-line no-console
-      console.error("Widget runtime error:", message, event?.error || event);
-    };
-    const handleRejection = (event) => {
-      const reason = event?.reason;
-      // eslint-disable-next-line no-console
-      console.error("Widget unhandled rejection:", reason || event);
-    };
-
-    window.addEventListener("error", handleError);
-    window.addEventListener("unhandledrejection", handleRejection);
-
-    return () => {
-      window.removeEventListener("error", handleError);
-      window.removeEventListener("unhandledrejection", handleRejection);
-    };
-  }, []);
-
-  const parsedState = useMemo(
-    () => parseState(snapshot?.state),
-    [snapshot?.state]
-  );
+  const parsedState = useMemo(() => parseState(snapshot?.state), [snapshot?.state]);
+  const error = snapshot?.legal === false ? snapshot?.error : null;
 
   const playerFleetRemaining = countCells(parsedState.playerBoard, "S");
   const enemyHitsOnPlayer = countCells(parsedState.opponentFog, "H");
   const playerHitsOnEnemy = countCells(parsedState.fogBoard, "H");
 
   return (
-    <main className="app">
-      <header className="app__header">
-        <div>
-          <p className="eyebrow">Naval Command Display</p>
-          <h1>Sea Battle</h1>
-          <p className="app__subtitle">
-            Type coordinates like A1 or J10 in chat. Boards only update from tool output.
-          </p>
-        </div>
-      </header>
-
-      <section className="status" aria-label="Battle status">
-        <div className="status-card">
-          <span>Status</span>
-          <strong>{parsedState.status}</strong>
-        </div>
-        <div className="status-card">
-          <span>Turn</span>
-          <strong>{parsedState.turn}</strong>
-        </div>
-        <div className="status-card">
-          <span>Last Action</span>
-          <strong>{parsedState.lastAction}</strong>
-        </div>
-        <div className="status-card">
-          <span>Winner</span>
-          <strong>{parsedState.winner || "-"}</strong>
-        </div>
-      </section>
-
-      <section className="telemetry" aria-label="Battle telemetry">
-        <div className="telemetry-item">Your Fleet Tiles Remaining: {playerFleetRemaining}</div>
-        <div className="telemetry-item">Hits Landed: {playerHitsOnEnemy}</div>
-        <div className="telemetry-item">Enemy Hits Landed: {enemyHitsOnPlayer}</div>
-      </section>
-
+    <GameWidgetShell
+      title="Sea Battle"
+      subtitle="Type coordinates like A1 or J10 in chat. Boards update only from validated tool output."
+      latestPayload={latestPayload}
+      snapshot={snapshot}
+      snapshotType="sea_battle_snapshot"
+      isSessionGame={true}
+      status={snapshot?.status}
+      turn={snapshot?.turn}
+      gameId={snapshot?.gameId}
+      error={error}
+      waitingMessage="Waiting for the next tool update..."
+      statusItems={[
+        { label: "Status", value: parsedState.status },
+        { label: "Turn", value: parsedState.turn },
+        { label: "Last Action", value: parsedState.lastAction },
+        { label: "Winner", value: parsedState.winner || "-" },
+      ]}
+      instructions={[
+        `Your Fleet Tiles Remaining: ${playerFleetRemaining}`,
+        `Hits Landed: ${playerHitsOnEnemy} | Enemy Hits Landed: ${enemyHitsOnPlayer}`,
+      ]}
+    >
       <section className="boards">
-        {isWaitingForTool ? (
-          <div className="board-panel board-panel--waiting" role="status">
-            <p>Waiting for the next tool update...</p>
-          </div>
-        ) : (
-          <>
-            <GridBoard
-              board={parsedState.playerBoard}
-              showShips={true}
-              title="Player Fleet"
-              ariaLabel="Player board"
-            />
-            <GridBoard
-              board={parsedState.fogBoard}
-              showShips={false}
-              title="Opponent Waters"
-              ariaLabel="Opponent board"
-            />
-          </>
-        )}
+        <GridBoard
+          board={parsedState.playerBoard}
+          showShips={true}
+          title="Player Fleet"
+          ariaLabel="Player board"
+        />
+        <GridBoard
+          board={parsedState.fogBoard}
+          showShips={false}
+          title="Opponent Waters"
+          ariaLabel="Opponent board"
+        />
       </section>
 
       <section className="legend" aria-label="Legend">
@@ -247,6 +189,6 @@ export default function App() {
         <div><span className="dot dot--hit" /> Hit</div>
         <div><span className="dot dot--miss" /> Miss</div>
       </section>
-    </main>
+    </GameWidgetShell>
   );
 }

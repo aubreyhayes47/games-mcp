@@ -1,18 +1,10 @@
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import "./app.css";
-import { useOpenAiGlobal } from "./hooks/useOpenAiGlobal";
+import { GameWidgetShell } from "@shared/shell/GameWidgetShell";
+import { normalizeToolOutput } from "@shared/shell/normalizeToolOutput";
+import { useOpenAiGlobal } from "@shared/shell/useOpenAiGlobal";
 
 const PIT_LABELS = ["1", "2", "3", "4", "5", "6"];
-
-const normalizeToolOutput = (toolOutput) => {
-  if (!toolOutput) {
-    return null;
-  }
-  if (toolOutput.structuredContent) {
-    return toolOutput.structuredContent;
-  }
-  return toolOutput;
-};
 
 const isSnapshotPayload = (payload) =>
   payload?.type === "mancala_snapshot" && typeof payload?.state === "string";
@@ -100,7 +92,6 @@ const Pit = ({ label, count, active }) => {
       <div className="pit__beads" aria-hidden="true">
         {beads.map((bead, index) => (
           <span
-            // eslint-disable-next-line react/no-array-index-key
             key={`${label}-${index}`}
             className="bead"
             style={{ left: `${bead.x}%`, top: `${bead.y}%` }}
@@ -121,7 +112,6 @@ const Store = ({ title, count }) => {
       <div className="store__well">
         {beads.map((bead, index) => (
           <span
-            // eslint-disable-next-line react/no-array-index-key
             key={`${title}-${index}`}
             className="bead bead--small"
             style={{ left: `${bead.x}%`, top: `${bead.y}%` }}
@@ -137,101 +127,69 @@ export default function App() {
   const toolOutput = useOpenAiGlobal("toolOutput");
   const latestPayload = normalizeToolOutput(toolOutput);
   const snapshot = isSnapshotPayload(latestPayload) ? latestPayload : null;
-  const isWaitingForTool = !isSnapshotPayload(latestPayload) && latestPayload !== null;
-
-  useEffect(() => {
-    const handleError = (event) => {
-      const message = event?.error?.message || event?.message || "Unknown error";
-      // eslint-disable-next-line no-console
-      console.error("Widget runtime error:", message, event?.error || event);
-    };
-    const handleRejection = (event) => {
-      const reason = event?.reason;
-      // eslint-disable-next-line no-console
-      console.error("Widget unhandled rejection:", reason || event);
-    };
-    window.addEventListener("error", handleError);
-    window.addEventListener("unhandledrejection", handleRejection);
-    return () => {
-      window.removeEventListener("error", handleError);
-      window.removeEventListener("unhandledrejection", handleRejection);
-    };
-  }, []);
-
   const parsedState = useMemo(() => parseState(snapshot?.state), [snapshot?.state]);
   const lastPit = parseLastPit(parsedState.lastAction);
+  const error = snapshot?.legal === false ? snapshot?.error : null;
 
   return (
-    <main className="app">
-      <header className="app__header">
-        <div>
-          <h1>Mancala MCP</h1>
-          <p className="app__subtitle">
-            Type a pit number 1-6 in chat. The board updates only from tool output.
-          </p>
-        </div>
-      </header>
-
-      <section className="status">
-        <div>
-          <strong>Status:</strong> {parsedState.status}
-        </div>
-        <div>
-          <strong>Turn:</strong> {parsedState.turn}
-        </div>
-        <div>
-          <strong>Last:</strong> {parsedState.lastAction}
-        </div>
-        <div>
-          <strong>Winner:</strong> {parsedState.winner || "-"}
-        </div>
-      </section>
-
-      {isWaitingForTool ? (
-        <section className="board board--waiting" role="status">
-          <p>Waiting for the next tool update...</p>
-        </section>
-      ) : (
-        <section className="board" aria-label="Mancala board">
-          <Store title="Opponent Store" count={parsedState.opponentStore} />
-          <div className="board__middle">
-            <div className="pit-row pit-row--opponent">
-              {parsedState.opponentPits
-                .slice()
-                .reverse()
-                .map((count, index) => {
-                  const label = PIT_LABELS[PIT_LABELS.length - 1 - index];
-                  return (
-                    <Pit
-                      key={`op-${label}`}
-                      label={label}
-                      count={count}
-                      active={Number(label) === lastPit}
-                    />
-                  );
-                })}
-            </div>
-            <div className="pit-row pit-row--player">
-              {parsedState.playerPits.map((count, index) => {
-                const label = PIT_LABELS[index];
+    <GameWidgetShell
+      title="Mancala MCP"
+      subtitle="Type a pit number 1-6 in chat. The board updates only from tool output."
+      latestPayload={latestPayload}
+      snapshot={snapshot}
+      snapshotType="mancala_snapshot"
+      isSessionGame={true}
+      status={snapshot?.status}
+      turn={snapshot?.turn}
+      gameId={snapshot?.gameId}
+      error={error}
+      waitingMessage="Waiting for the next tool update..."
+      statusItems={[
+        { label: "Status", value: parsedState.status },
+        { label: "Turn", value: parsedState.turn },
+        { label: "Last", value: parsedState.lastAction },
+        { label: "Winner", value: parsedState.winner || "-" },
+      ]}
+      instructions={[
+        "Player pits are 1-6 from left to right.",
+        "Opponent pits are mirrored.",
+      ]}
+    >
+      <section className="board" aria-label="Mancala board">
+        <Store title="Opponent Store" count={parsedState.opponentStore} />
+        <div className="board__middle">
+          <div className="pit-row pit-row--opponent">
+            {parsedState.opponentPits
+              .slice()
+              .reverse()
+              .map((count, index) => {
+                const label = PIT_LABELS[PIT_LABELS.length - 1 - index];
                 return (
                   <Pit
-                    key={`pl-${label}`}
+                    key={`op-${label}`}
                     label={label}
                     count={count}
                     active={Number(label) === lastPit}
                   />
                 );
               })}
-            </div>
           </div>
-          <Store title="Player Store" count={parsedState.playerStore} />
-        </section>
-      )}
-
-      <section className="board-meta">
-        <span>Player pits are 1-6 from left to right. Opponent pits are mirrored.</span>
+          <div className="pit-row pit-row--player">
+            {parsedState.playerPits.map((count, index) => {
+              const label = PIT_LABELS[index];
+              return (
+                <Pit
+                  key={`pl-${label}`}
+                  label={label}
+                  count={count}
+                  active={Number(label) === lastPit}
+                />
+              );
+            })}
+          </div>
+        </div>
+        <Store title="Player Store" count={parsedState.playerStore} />
       </section>
-    </main>
+    </GameWidgetShell>
   );
 }

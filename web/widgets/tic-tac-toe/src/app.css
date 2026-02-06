@@ -8,8 +8,7 @@
   --grid-stroke: #6b6f78;
   --chip: rgba(243, 238, 222, 0.85);
   color: var(--graphite);
-  font-family: "Patrick Hand", "Bradley Hand", "Segoe Print", "Comic Sans MS",
-    "Georgia", serif;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
 * {

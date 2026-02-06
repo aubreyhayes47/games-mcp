@@ -29,6 +29,7 @@ try:
     )
     from .slot_rules import (
         initial_slot_state,
+        parse_state as parse_slot_state,
         serialize_state as serialize_slot_state,
         spin_slot as spin_slot_rule,
     )
@@ -37,18 +38,21 @@ try:
         initial_four_in_a_row_state,
         legal_four_in_a_row_moves as legal_four_in_a_row_moves_rule,
         opponent_move_candidates as four_in_a_row_opponent_moves,
+        parse_state as parse_four_in_a_row_state,
     )
     from .tic_tac_toe_rules import (
         apply_tic_tac_toe_move as apply_tic_tac_toe_move_rule,
         initial_tic_tac_toe_state,
         legal_tic_tac_toe_moves as legal_tic_tac_toe_moves_rule,
         opponent_move_candidates as tic_tac_toe_opponent_moves,
+        parse_state as parse_tic_tac_toe_state,
     )
     from .mancala_rules import (
         apply_mancala_move as apply_mancala_move_rule,
         initial_mancala_state,
         legal_mancala_moves as legal_mancala_moves_rule,
         opponent_move_candidates as mancala_opponent_moves,
+        parse_state as parse_mancala_state,
     )
     from .checkers_rules import (
         all_checkers_moves,
@@ -56,6 +60,7 @@ try:
         initial_checkers_state,
         legal_checkers_moves as legal_checkers_moves_rule,
         opponent_move_candidates as checkers_opponent_move_candidates,
+        parse_state as parse_checkers_state,
     )
 except ImportError:  # pragma: no cover - fallback for script execution
     from chess_rules import apply_uci_move, legal_moves_uci, opponent_move_candidates
@@ -77,6 +82,7 @@ except ImportError:  # pragma: no cover - fallback for script execution
     )
     from slot_rules import (
         initial_slot_state,
+        parse_state as parse_slot_state,
         serialize_state as serialize_slot_state,
         spin_slot as spin_slot_rule,
     )
@@ -85,18 +91,21 @@ except ImportError:  # pragma: no cover - fallback for script execution
         initial_four_in_a_row_state,
         legal_four_in_a_row_moves as legal_four_in_a_row_moves_rule,
         opponent_move_candidates as four_in_a_row_opponent_moves,
+        parse_state as parse_four_in_a_row_state,
     )
     from tic_tac_toe_rules import (
         apply_tic_tac_toe_move as apply_tic_tac_toe_move_rule,
         initial_tic_tac_toe_state,
         legal_tic_tac_toe_moves as legal_tic_tac_toe_moves_rule,
         opponent_move_candidates as tic_tac_toe_opponent_moves,
+        parse_state as parse_tic_tac_toe_state,
     )
     from mancala_rules import (
         apply_mancala_move as apply_mancala_move_rule,
         initial_mancala_state,
         legal_mancala_moves as legal_mancala_moves_rule,
         opponent_move_candidates as mancala_opponent_moves,
+        parse_state as parse_mancala_state,
     )
     from checkers_rules import (
         all_checkers_moves,
@@ -104,6 +113,7 @@ except ImportError:  # pragma: no cover - fallback for script execution
         initial_checkers_state,
         legal_checkers_moves as legal_checkers_moves_rule,
         opponent_move_candidates as checkers_opponent_move_candidates,
+        parse_state as parse_checkers_state,
     )
 
 CHESS_WIDGET_TEMPLATE_URI = "ui://widget/chess-board-v1.html"
@@ -115,7 +125,7 @@ SLOT_WIDGET_TEMPLATE_URI = "ui://widget/slot-v1.html"
 FOUR_IN_A_ROW_WIDGET_TEMPLATE_URI = "ui://widget/four-in-a-row-v1.html"
 TIC_TAC_TOE_WIDGET_TEMPLATE_URI = "ui://widget/tic-tac-toe-v1.html"
 MANCALA_WIDGET_TEMPLATE_URI = "ui://widget/mancala-board-v1.html"
-OPPONENT_MOVE_CAP = 200
+OPPONENT_MOVE_CAP = 20
 
 
 def _tool_meta(
@@ -173,12 +183,15 @@ def register_tools(app: FastMCP) -> None:
     def apply_chess_move(gameId: str, fen: str, moveUci: str) -> ToolResult:  # noqa: N803
         result = apply_uci_move(fen, moveUci)
         if not result["legal"]:
+            board = chess.Board(result["fen"])
             payload = {
                 "type": "chess_snapshot",
                 "gameType": "chess",
                 "gameId": gameId,
                 "legal": False,
                 "fen": result["fen"],
+                "status": "game_over" if board.is_game_over() else "in_progress",
+                "turn": "w" if board.turn else "b",
                 "error": result["error"],
             }
             return ToolResult(content=[], structured_content=payload)
@@ -278,12 +291,20 @@ def register_tools(app: FastMCP) -> None:
     def apply_checkers_move(gameId: str, state: str, move: str) -> ToolResult:  # noqa: N803
         result = apply_checkers_move_rule(state, move)
         if not result.legal:
+            status = "in_progress"
+            turn = None
+            try:
+                _, turn = parse_checkers_state(result.state)
+            except ValueError:
+                turn = None
             payload = {
                 "type": "checkers_snapshot",
                 "gameType": "checkers",
                 "gameId": gameId,
                 "legal": False,
                 "state": result.state,
+                "status": status,
+                "turn": turn,
                 "error": result.error or "Illegal move.",
             }
             return ToolResult(content=[], structured_content=payload)
@@ -441,12 +462,22 @@ def register_tools(app: FastMCP) -> None:
     def apply_blackjack_action(gameId: str, state: str, action: str) -> ToolResult:  # noqa: N803
         result = apply_blackjack_action_rule(state, action)
         if not result["legal"]:
+            turn = "player"
+            status = "in_progress"
+            try:
+                parsed = parse_blackjack_state(result["state"])
+                turn = parsed.turn
+                status = parsed.status
+            except ValueError:
+                pass
             payload = {
                 "type": "blackjack_snapshot",
                 "gameType": "blackjack",
                 "gameId": gameId,
                 "legal": False,
                 "state": result["state"],
+                "status": status,
+                "turn": turn,
                 "error": result.get("error") or "Illegal action.",
             }
             return ToolResult(content=[], structured_content=payload)
@@ -608,12 +639,22 @@ def register_tools(app: FastMCP) -> None:
     def apply_sea_battle_move(gameId: str, state: str, coord: str) -> ToolResult:  # noqa: N803
         result = apply_sea_battle_move_rule(state, coord)
         if not result.legal:
+            turn = "player"
+            status = "in_progress"
+            try:
+                parsed = parse_sea_battle_state(result.state)
+                turn = str(parsed["turn"])
+                status = str(parsed["status"])
+            except ValueError:
+                pass
             payload = {
                 "type": "sea_battle_snapshot",
                 "gameType": "sea_battle",
                 "gameId": gameId,
                 "legal": False,
                 "state": result.state,
+                "status": status,
+                "turn": turn,
                 "error": result.error or "Illegal move.",
             }
             return ToolResult(content=[], structured_content=payload)
@@ -733,11 +774,18 @@ def register_tools(app: FastMCP) -> None:
     def spin_slot(state: str) -> ToolResult:
         result = spin_slot_rule(state)
         if not result["legal"]:
+            status = "in_progress"
+            try:
+                parsed = parse_slot_state(result["state"])
+                status = parsed.status
+            except ValueError:
+                pass
             payload = {
                 "type": "slot_snapshot",
                 "gameType": "slot",
                 "legal": False,
                 "state": result["state"],
+                "status": status,
                 "error": result.get("error") or "Illegal spin.",
             }
             return ToolResult(content=[], structured_content=payload)
@@ -799,12 +847,22 @@ def register_tools(app: FastMCP) -> None:
     ) -> ToolResult:  # noqa: N803
         result = apply_four_in_a_row_move_rule(state, column)
         if not result.legal:
+            turn = "player"
+            status = "in_progress"
+            try:
+                parsed = parse_four_in_a_row_state(result.state)
+                turn = str(parsed["turn"])
+                status = str(parsed["status"])
+            except ValueError:
+                pass
             payload = {
                 "type": "four_in_a_row_snapshot",
                 "gameType": "four_in_a_row",
                 "gameId": gameId,
                 "legal": False,
                 "state": result.state,
+                "status": status,
+                "turn": turn,
                 "error": result.error or "Illegal move.",
             }
             return ToolResult(content=[], structured_content=payload)
@@ -925,12 +983,22 @@ def register_tools(app: FastMCP) -> None:
     ) -> ToolResult:  # noqa: N803
         result = apply_tic_tac_toe_move_rule(state, coord)
         if not result.legal:
+            turn = "player"
+            status = "in_progress"
+            try:
+                parsed = parse_tic_tac_toe_state(result.state)
+                turn = str(parsed["turn"])
+                status = str(parsed["status"])
+            except ValueError:
+                pass
             payload = {
                 "type": "tic_tac_toe_snapshot",
                 "gameType": "tic_tac_toe",
                 "gameId": gameId,
                 "legal": False,
                 "state": result.state,
+                "status": status,
+                "turn": turn,
                 "error": result.error or "Illegal move.",
             }
             return ToolResult(content=[], structured_content=payload)
@@ -1038,12 +1106,22 @@ def register_tools(app: FastMCP) -> None:
     ) -> ToolResult:  # noqa: N803
         result = apply_mancala_move_rule(state, pit)
         if not result.legal:
+            turn = "player"
+            status = "in_progress"
+            try:
+                parsed = parse_mancala_state(result.state)
+                turn = str(parsed["turn"])
+                status = str(parsed["status"])
+            except ValueError:
+                pass
             payload = {
                 "type": "mancala_snapshot",
                 "gameType": "mancala",
                 "gameId": gameId,
                 "legal": False,
                 "state": result.state,
+                "status": status,
+                "turn": turn,
                 "error": result.error or "Illegal move.",
             }
             return ToolResult(content=[], structured_content=payload)

@@ -1,6 +1,6 @@
 :root {
   color-scheme: light;
-  font-family: "Trebuchet MS", "Gill Sans", "Verdana", sans-serif;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
   --wood-dark: #6f4427;
   --wood-mid: #8c5a38;
   --wood-light: #b98157;

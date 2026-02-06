@@ -386,3 +386,69 @@ games-mcp/
           widget.css
   README.md
 ```
+
+## 5) UI/UX guidelines (Apps SDK: UX principles + UI guidelines)
+
+These guidelines are mandatory for new game widgets and UI updates in this repo.
+
+### 5.1 Product fit inside ChatGPT
+
+* Build for **conversational leverage**: natural language + multi-turn context should make the game easier to run than a standalone page.
+* **Extract, don’t port**: ship small game actions and clear snapshots, not full-site navigation or dashboard complexity.
+* Ensure at least one complete game task can be finished **end-to-end in chat**.
+* Avoid ad-like, irrelevant, or static long-form content.
+
+### 5.2 Conversation-first interaction model
+
+* Conversation is the primary control surface; widget is a supporting visual surface.
+* Keep tool inputs/outputs atomic, explicit, and model-friendly to reduce clarification turns.
+* Do not infer state changes from prose; every transition must come from tool responses.
+* Keep follow-up assistant text short and non-redundant with the widget.
+
+### 5.3 Display modes for games
+
+* Default to **inline card** for board/table snapshots and lightweight status.
+* Use **picture-in-picture (PiP)** for ongoing sessions (games) that should stay visible while chat continues.
+* Use **fullscreen** only when the game genuinely needs deeper, multi-step interaction.
+* Do not implement deep navigation, tabs, nested views, or nested scrolling inside inline cards.
+
+### 5.4 Inline card behavior constraints
+
+* Keep cards single-purpose and scannable.
+* Max **two primary actions** in a card (one primary + optional secondary); for this repo, prefer chat-driven moves over direct widget controls.
+* Persist any inline edit state only when explicitly supported by tool semantics.
+* Card should auto-size to content and avoid internal scroll regions.
+* Do not duplicate ChatGPT-native UI (composer, app header identity, etc.).
+
+### 5.5 Visual design system rules
+
+* Prefer Apps SDK UI design system patterns/tokens where practical.
+* Use ChatGPT/system color roles for text and core UI; brand accents are optional and limited.
+* Do not override platform typography with custom fonts; inherit system font stack.
+* Keep spacing/padding consistent; preserve clear hierarchy (headline -> detail -> action).
+* Use simple, consistent iconography; do not embed app logo inside widget content.
+
+### 5.6 Accessibility baseline
+
+* Meet WCAG AA contrast for text/background.
+* Provide alt text for meaningful images.
+* Support text resizing/reflow without broken layouts.
+* Ensure status changes (legal/illegal move, turn changes, game over) are clearly readable.
+
+### 5.7 Performance and payload discipline
+
+* Keep UI responsive enough to preserve chat rhythm.
+* `structuredContent` stays concise and stable; put bulky UI-only details in `_meta` or omit in v1.
+* Render only server-confirmed snapshots; never optimistic-commit board state.
+
+### 5.8 Repo-specific game UI rules
+
+* Current baseline remains **display-only boards/tables**; user move input is typed in chat.
+* Opponent/dealer actions must always be chosen from tool-provided legal lists and re-validated by apply tools.
+* Illegal moves/actions must preserve prior snapshot and surface a clear error.
+* Game-over state must be explicit in both tool output and widget rendering.
+* PiP sessions should end/close when the game session ends.
+
+Source references:
+* https://developers.openai.com/apps-sdk/concepts/ux-principles
+* https://developers.openai.com/apps-sdk/concepts/ui-guidelines

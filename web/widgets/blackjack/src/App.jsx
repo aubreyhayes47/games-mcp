@@ -1,6 +1,8 @@
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import "./app.css";
-import { useOpenAiGlobal } from "./hooks/useOpenAiGlobal";
+import { GameWidgetShell } from "@shared/shell/GameWidgetShell";
+import { normalizeToolOutput } from "@shared/shell/normalizeToolOutput";
+import { useOpenAiGlobal } from "@shared/shell/useOpenAiGlobal";
 
 const SUIT_SYMBOLS = {
   S: "♠",
@@ -12,16 +14,6 @@ const SUIT_SYMBOLS = {
 const STATUS_LABELS = {
   in_progress: "In progress",
   game_over: "Game over",
-};
-
-const normalizeToolOutput = (toolOutput) => {
-  if (!toolOutput) {
-    return null;
-  }
-  if (toolOutput.structuredContent) {
-    return toolOutput.structuredContent;
-  }
-  return toolOutput;
 };
 
 const isSnapshotPayload = (payload) =>
@@ -154,172 +146,118 @@ export default function App() {
   const latestPayload = normalizeToolOutput(toolOutput);
   const snapshot = isSnapshotPayload(latestPayload) ? latestPayload : null;
 
-  const isWaitingForTool =
-    !isSnapshotPayload(latestPayload) && latestPayload !== null;
-
-  useEffect(() => {
-    const handleError = (event) => {
-      const message = event?.error?.message || event?.message || "Unknown error";
-      // eslint-disable-next-line no-console
-      console.error("Widget runtime error:", message, event?.error || event);
-    };
-    const handleRejection = (event) => {
-      const reason = event?.reason;
-      // eslint-disable-next-line no-console
-      console.error("Widget unhandled rejection:", reason || event);
-    };
-    window.addEventListener("error", handleError);
-    window.addEventListener("unhandledrejection", handleRejection);
-    return () => {
-      window.removeEventListener("error", handleError);
-      window.removeEventListener("unhandledrejection", handleRejection);
-    };
-  }, []);
-
-  const parsedState = useMemo(
-    () => parseState(snapshot?.state),
-    [snapshot?.state]
-  );
+  const parsedState = useMemo(() => parseState(snapshot?.state), [snapshot?.state]);
   const hideDealerHoleCard =
     snapshot?.turn === "player" && snapshot?.status === "in_progress";
   const visibleDealerCards = hideDealerHoleCard
     ? parsedState.dealer.slice(0, 1)
     : parsedState.dealer;
+  const error = snapshot?.legal === false ? snapshot?.error : null;
 
   return (
-    <main className="app">
-      <header className="app__header">
-        <div>
-          <p className="eyebrow">Display-only table</p>
-          <h1>Blackjack</h1>
-          <p className="app__subtitle">
-            Type actions in chat. The table updates only from validated tool output.
-          </p>
-        </div>
-        <div className="table-chip">Actions: hit, stand, double, split</div>
-      </header>
-
-      <section className="status" aria-label="Game status">
-        <div className="stat-pill">
-          <span>Status</span>
-          <strong>{getStatusLabel(snapshot)}</strong>
-        </div>
-        <div className="stat-pill">
-          <span>Turn</span>
-          <strong>{snapshot?.turn || "-"}</strong>
-        </div>
-        <div className="stat-pill">
-          <span>Stack</span>
-          <strong>{formatChips(parsedState.stack)}</strong>
-        </div>
-        <div className="stat-pill">
-          <span>Table Bet</span>
-          <strong>{formatChips(parsedState.bet)}</strong>
-        </div>
-        <div className="stat-pill">
-          <span>Last Action</span>
-          <strong>{snapshot?.lastAction || "-"}</strong>
-        </div>
-      </section>
-
+    <GameWidgetShell
+      title="Blackjack"
+      subtitle="Type actions in chat. The table updates only from validated tool output."
+      latestPayload={latestPayload}
+      snapshot={snapshot}
+      snapshotType="blackjack_snapshot"
+      isSessionGame={true}
+      status={snapshot?.status}
+      turn={snapshot?.turn}
+      gameId={snapshot?.gameId}
+      error={error}
+      waitingMessage="Waiting for the next tool update..."
+      statusItems={[
+        { label: "Status", value: getStatusLabel(snapshot) },
+        { label: "Turn", value: snapshot?.turn || "-" },
+        { label: "Stack", value: formatChips(parsedState.stack) },
+        { label: "Table Bet", value: formatChips(parsedState.bet) },
+        { label: "Last Action", value: snapshot?.lastAction || "-" },
+      ]}
+      instructions={[
+        "Type one action in chat: hit, stand, double, or split.",
+        "Dealer hole card stays hidden until dealer turn or game over.",
+      ]}
+    >
       <section className="table">
-        {isWaitingForTool ? (
-          <div className="table__waiting" role="status">
-            <p>Waiting for the next tool update...</p>
+        <div className="table__layout">
+          <div className="hand-group">
+            <h2>Dealer</h2>
+            <div className="player-hands">
+              <article className="player-hand">
+                <p className="player-hand__label">Hand 1</p>
+                <div className="cards">
+                  {parsedState.dealer.length === 0 ? (
+                    <div className="card card--empty">-</div>
+                  ) : (
+                    <>
+                      {visibleDealerCards.map((card, idx) => (
+                        <div
+                          key={`dealer-${card}-${idx}`}
+                          className={`card ${isRedSuit(card) ? "card--red" : ""}`}
+                        >
+                          <span>{cardLabel(card)}</span>
+                        </div>
+                      ))}
+                      {hideDealerHoleCard ? (
+                        <div className="card card--hidden" aria-label="Hidden card" />
+                      ) : null}
+                    </>
+                  )}
+                </div>
+                <div className="hand-meta">
+                  <span>Total: {hideDealerHoleCard ? "?" : handValue(parsedState.dealer)}</span>
+                </div>
+              </article>
+            </div>
           </div>
-        ) : (
-          <div className="table__layout">
-            <div className="hand-group">
-              <h2>Dealer</h2>
-              <div className="player-hands">
-                <article className="player-hand">
-                  <p className="player-hand__label">Hand 1</p>
-                  <div className="cards">
-                    {parsedState.dealer.length === 0 ? (
-                      <div className="card card--empty">-</div>
-                    ) : (
-                      <>
-                        {visibleDealerCards.map((card, idx) => (
+
+          <div className="hand-group hand-group--player">
+            <h2>Player</h2>
+            <div className="player-hands">
+              {parsedState.playerHands.length === 0 ? (
+                <div className="cards">
+                  <div className="card card--empty">-</div>
+                </div>
+              ) : (
+                parsedState.playerHands.map((hand, index) => {
+                  const isActive =
+                    snapshot?.turn === "player" &&
+                    parsedState.handIndex === index &&
+                    hand.state === "active";
+                  return (
+                    <article
+                      key={`hand-${index}`}
+                      className={`player-hand ${isActive ? "player-hand--active" : ""}`}
+                    >
+                      <p className="player-hand__label">Hand {index + 1}</p>
+                      <div className="cards">
+                        {hand.cards.map((card, cardIndex) => (
                           <div
-                            key={`dealer-${card}-${idx}`}
+                            key={`hand-${index}-${card}-${cardIndex}`}
                             className={`card ${isRedSuit(card) ? "card--red" : ""}`}
                           >
                             <span>{cardLabel(card)}</span>
                           </div>
                         ))}
-                        {hideDealerHoleCard ? (
-                          <div className="card card--hidden" aria-label="Hidden card" />
+                      </div>
+                      <div className="hand-meta">
+                        <span>Total: {handValue(hand.cards)}</span>
+                        <span>Bet: {formatChips(hand.bet)}</span>
+                        <span>State: {hand.state}</span>
+                        <span>Doubled: {hand.doubled ? "Yes" : "No"}</span>
+                        {parsedState.results?.[index] ? (
+                          <span>Result: {parsedState.results[index]}</span>
                         ) : null}
-                      </>
-                    )}
-                  </div>
-                  <div className="hand-meta">
-                    <span>
-                      Total: {hideDealerHoleCard ? "?" : handValue(parsedState.dealer)}
-                    </span>
-                  </div>
-                </article>
-              </div>
-            </div>
-
-            <div className="hand-group hand-group--player">
-              <h2>Player</h2>
-              <div className="player-hands">
-                {parsedState.playerHands.length === 0 ? (
-                  <div className="cards">
-                    <div className="card card--empty">-</div>
-                  </div>
-                ) : (
-                  parsedState.playerHands.map((hand, index) => {
-                    const isActive =
-                      snapshot?.turn === "player" &&
-                      parsedState.handIndex === index &&
-                      hand.state === "active";
-                    return (
-                      <article
-                        key={`hand-${index}`}
-                        className={`player-hand ${
-                          isActive ? "player-hand--active" : ""
-                        }`}
-                      >
-                        <p className="player-hand__label">Hand {index + 1}</p>
-                        <div className="cards">
-                          {hand.cards.map((card, cardIndex) => (
-                            <div
-                              key={`hand-${index}-${card}-${cardIndex}`}
-                              className={`card ${
-                                isRedSuit(card) ? "card--red" : ""
-                              }`}
-                            >
-                              <span>{cardLabel(card)}</span>
-                            </div>
-                          ))}
-                        </div>
-                        <div className="hand-meta">
-                          <span>Total: {handValue(hand.cards)}</span>
-                          <span>Bet: {formatChips(hand.bet)}</span>
-                          <span>State: {hand.state}</span>
-                          <span>Doubled: {hand.doubled ? "Yes" : "No"}</span>
-                          {parsedState.results?.[index] ? (
-                            <span>Result: {parsedState.results[index]}</span>
-                          ) : null}
-                        </div>
-                      </article>
-                    );
-                  })
-                )}
-              </div>
+                      </div>
+                    </article>
+                  );
+                })
+              )}
             </div>
           </div>
-        )}
+        </div>
       </section>
-
-      <section className="table-meta">
-        <span>Dealer hole card remains hidden in chat until reveal conditions are met.</span>
-        <p className="table-note">
-          Splits and doubles are available when legal; insurance and surrender are disabled.
-        </p>
-      </section>
-    </main>
+    </GameWidgetShell>
   );
 }
