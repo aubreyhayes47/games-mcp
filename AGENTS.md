@@ -63,7 +63,7 @@ constraints and payload discipline with a different state format.
 
 **Input**
 
-* `side` (optional): `"white" | "black"`
+* None
 
 **Output (structuredContent)**
 

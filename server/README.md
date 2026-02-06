@@ -56,9 +56,7 @@ auto-renders widget output from `new_*` and `apply_*` tool responses.
 
 ```json
 // new_chess_game
-{
-  "side": "white"
-}
+{}
 ```
 
 ```json

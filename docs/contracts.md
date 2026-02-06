@@ -8,7 +8,7 @@ This document defines the tool inputs/outputs and state formats for all current 
 
 **Input**
 
-* `side` (optional): `"white" | "black"`
+* None
 
 **Output (structuredContent)**
 
